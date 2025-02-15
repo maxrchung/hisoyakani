@@ -3,6 +3,9 @@ import bmesh
 import json
 import bpy_extras
 import pprint
+import os
+
+print(os.getcwd())
 
 print()
 print("start")
@@ -23,9 +26,11 @@ frame = 0
 frame_rate = 10
 
 while frame < frame_end:
+    print("Processing ", frame)
+    
     """
     {
-        points: [Vector, Vector],
+        points: [Vector, Vector, Vector],
         material: string
     }
     """
@@ -120,8 +125,12 @@ while frame < frame_end:
 
 
     frame += frame_rate
-    
-with open("hisoyakani.json", "w") as file:
+
+
+directory = os.path.dirname(bpy.data.filepath)
+path = os.path.join(directory, "hisoyakani.json")
+
+with open(path, "w") as file:
     json.dump(data, file)
 
 print("end")
