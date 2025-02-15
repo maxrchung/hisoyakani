@@ -1,0 +1,24 @@
+{
+  "name": "hisoyakani",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "tsx src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxrchung/hisoyakani.git"
+  },
+  "author": "maxrchung",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maxrchung/hisoyakani/issues"
+  },
+  "homepage": "https://github.com/maxrchung/hisoyakani#readme",
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.3"
+  }
+}
