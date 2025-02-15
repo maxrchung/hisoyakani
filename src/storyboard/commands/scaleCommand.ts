@@ -1,5 +1,5 @@
 import { vec2 } from "gl-matrix";
-import { formatNumber, isNumberEqual } from "../../common";
+import { formatNumber } from "../../common";
 
 export default class ScaleCommand {
   constructor(

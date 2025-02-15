@@ -152,4 +152,7 @@ const getPrevious = (
     // since there are no transforms.
     return triangle;
   }
+
+  // If there is no previous then we will naturally return undefined
+  return;
 };
