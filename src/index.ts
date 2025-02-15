@@ -1,5 +1,5 @@
 import Storyboard from "./storyboard";
-import data from "./blend/hisoyakani.json";
+import data from "../blend/hisoyakani.json";
 import { vec2 } from "gl-matrix";
 
 const FRAME_RATE = 30;
