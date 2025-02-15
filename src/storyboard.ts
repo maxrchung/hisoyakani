@@ -10,5 +10,7 @@ export default class Storyboard {
     return sprite_;
   }
 
-  write(path: string) {}
+  write(path: string) {
+    const output = ["[Events]"];
+  }
 }
