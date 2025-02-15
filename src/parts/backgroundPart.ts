@@ -1,0 +1,9 @@
+import { vec2 } from "gl-matrix";
+import Storyboard from "../storyboard";
+
+// As a by-product gets rid of some SB load
+export default function backgroundPart(storyboard: Storyboard) {
+  const sprite = storyboard.sprite("a.png", vec2.fromValues(320, 240));
+  const scale = vec2.fromValues(856, 482);
+  sprite.scale(0, 999999, scale, scale);
+}

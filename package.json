@@ -16,6 +16,7 @@
   },
   "homepage": "https://github.com/maxrchung/hisoyakani#readme",
   "devDependencies": {
+    "@types/node": "^22.13.4",
     "tsx": "^4.19.2"
   },
   "dependencies": {
