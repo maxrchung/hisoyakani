@@ -5,9 +5,9 @@ import smokePart from "./parts/smokePart";
 
 const storyboard = new Storyboard();
 
-backgroundPart(storyboard);
+// backgroundPart(storyboard);
 trianglesPart(storyboard);
-smokePart(storyboard);
+// smokePart(storyboard);
 
 const path =
   "C:\\Users\\Max\\AppData\\Local\\osu!\\Songs\\beatmap-638752487828044626-h\\swag - swag (S2VX).osb";

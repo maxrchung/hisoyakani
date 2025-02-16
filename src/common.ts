@@ -4,6 +4,7 @@ export const Constants = {
   FRAME_RATE: 30,
   FRAME_DELTA: 10,
   UNIT_X: vec2.fromValues(1, 0),
+  UNIT_Y: vec2.fromValues(0, 1),
   TRIANGLE_SIZE: 100,
   SCREEN_SIZE: vec2.fromValues(854, 480),
   // 0,0 in OSB coordinates is offset from actual top left spot
