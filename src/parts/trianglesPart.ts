@@ -79,12 +79,15 @@ const splitTriangles = (points: number[][]) => {
   // Correct D to world position since projection is local
   vec2.add(D, D, A);
 
+  // D vectors
   const DToA = vec2.subtract(vec2.create(), A, D);
   const DToB = vec2.subtract(vec2.create(), B, D);
 
+  // Calculate rotations
   const rotationA = angleFromX(DToA);
   const rotationB = angleFromX(DToB);
 
+  // Calculate scales
   const DToC = vec2.subtract(vec2.create(), C, D);
   const DToCLength = vec2.length(DToC) / Constants.TRIANGLE_SIZE;
   const scaleA = vec2.fromValues(
@@ -96,7 +99,9 @@ const splitTriangles = (points: number[][]) => {
     DToCLength
   );
 
+  // Convert position from 0,0 top left to osb coordinate
   const position = vec2.multiply(D, D, Constants.SCREEN_SIZE);
+  vec2.add(position, position, Constants.SCREEN_OFFSET);
 
   return {
     // Position is shared between the two right triangles, only rotations and
