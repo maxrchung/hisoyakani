@@ -17,8 +17,7 @@ export default function trianglesPart(storyboard: Storyboard) {
     const end = start + Constants.FRAME_DELTA * Constants.FRAME_RATE;
     const current: Sprite[] = [];
 
-    // TODO: Testing
-    for (const { points, material } of [triangles[0]]) {
+    for (const { points, material } of triangles) {
       const file = material.toString();
 
       // Split arbitrary triangle into 2 right-sided triangles
@@ -57,13 +56,13 @@ export default function trianglesPart(storyboard: Storyboard) {
         current.push(sprite);
       });
 
-      // TODO: Testing
-      for (const point of points) {
-        createPoint(
-          convertPosition(vec2.fromValues(point[0], point[1])),
-          storyboard
-        );
-      }
+      // // TODO: Testing
+      // for (const point of points) {
+      //   createPoint(
+      //     convertPosition(vec2.fromValues(point[0], point[1])),
+      //     storyboard
+      //   );
+      // }
     }
 
     previous = current;
