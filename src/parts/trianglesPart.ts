@@ -12,6 +12,9 @@ export default function trianglesPart(storyboard: Storyboard) {
   // can instead just increase the previous sprite's duration
   let previous: Sprite[] = [];
 
+  // For debugging
+  const frames = data;
+
   for (const { frame, triangles } of data) {
     const start = frame * Constants.FRAME_RATE;
     const end = start + Constants.FRAME_DELTA * Constants.FRAME_RATE;
@@ -56,7 +59,7 @@ export default function trianglesPart(storyboard: Storyboard) {
         current.push(sprite);
       });
 
-      // // TODO: Testing
+      // TODO: Testing
       // for (const point of points) {
       //   createPoint(
       //     convertPosition(vec2.fromValues(point[0], point[1])),
@@ -71,41 +74,63 @@ export default function trianglesPart(storyboard: Storyboard) {
 
 // Splits a given triangle into 2 right-triangles
 const splitTriangles = (points: number[][]) => {
-  const [A, B, C] = [0, 1, 2].map((index) =>
+  let [A, B, C] = [0, 1, 2].map((index) =>
     // Immediately convert so there's no weird stuff going on later
     convertPosition(vec2.fromValues(points[index][0], points[index][1]))
   );
 
   // Get vectors between A, B, C
-  const AToB = vec2.subtract(vec2.create(), B, A);
-  const AToC = vec2.subtract(vec2.create(), C, A);
+  const AB = vec2.subtract(vec2.create(), B, A);
+  const AC = vec2.subtract(vec2.create(), C, A);
+
+  // Ensure points are valid for projection otherwise move them forward
+  if (!isValidProjection(AB, AC)) {
+    const temp = vec2.copy(vec2.create(), A);
+    A = B;
+    B = C;
+    C = temp;
+
+    vec2.subtract(AB, B, A);
+    vec2.subtract(AC, C, A);
+
+    // This can happen a maximum of twice so do it again
+    if (!isValidProjection(AB, AC)) {
+      const temp = vec2.copy(vec2.create(), A);
+      A = B;
+      B = C;
+      C = temp;
+
+      vec2.subtract(AB, B, A);
+      vec2.subtract(AC, C, A);
+    }
+  }
 
   // Projection of B onto A = A * dot(B, A) / dot(A, A)
-  const dotCB = vec2.dot(AToC, AToB);
-  const dotBB = vec2.dot(AToB, AToB);
-  const D = vec2.scale(vec2.create(), AToB, dotCB / dotBB);
+  const dotCB = vec2.dot(AC, AB);
+  const dotBB = vec2.dot(AB, AB);
+  const D = vec2.scale(vec2.create(), AB, dotCB / dotBB);
 
   // Correct D to world position since projection is local
   vec2.add(D, D, A);
 
   // D vectors
-  const DToA = vec2.subtract(vec2.create(), A, D);
-  const DToB = vec2.subtract(vec2.create(), B, D);
+  const DA = vec2.subtract(vec2.create(), A, D);
+  const DB = vec2.subtract(vec2.create(), B, D);
 
   // Calculate rotations
-  const rotationA = -angleFrom(DToA, Constants.UNIT_X);
-  const rotationB = -angleFrom(DToB, Constants.UNIT_Y);
+  const rotationA = -angleFrom(DA, Constants.UNIT_X);
+  const rotationB = -angleFrom(DB, Constants.UNIT_Y);
 
   // Calculate scales
-  const DToCLength =
+  const DCLength =
     vec2.length(vec2.subtract(vec2.create(), C, D)) / Constants.TRIANGLE_SIZE;
   const scaleA = vec2.fromValues(
-    vec2.length(DToA) / Constants.TRIANGLE_SIZE,
-    DToCLength
+    vec2.length(DA) / Constants.TRIANGLE_SIZE,
+    DCLength
   );
   const scaleB = vec2.fromValues(
-    DToCLength,
-    vec2.length(DToB) / Constants.TRIANGLE_SIZE
+    DCLength,
+    vec2.length(DB) / Constants.TRIANGLE_SIZE
   );
 
   const position = D;
@@ -188,4 +213,20 @@ const createPoint = (position: vec2, storyboard: Storyboard) => {
     vec2.fromValues(position[0] - 5, position[1] - 5)
   );
   sprite.scale(0, 999999, vec2.fromValues(10, 10), vec2.fromValues(10, 10));
+};
+
+// In our projection scenario we need to make sure several properties are met
+const isValidProjection = (AB: vec2, AC: vec2) => {
+  // AC must be smaller than AB
+  if (vec2.squaredLength(AC) > vec2.squaredLength(AB)) {
+    return false;
+  }
+
+  const angle = Math.abs(angleFrom(AB, AC));
+  // The angle between AB and AC must be < 90 degrees
+  if (angle >= Math.PI / 2) {
+    return false;
+  }
+
+  return true;
 };
