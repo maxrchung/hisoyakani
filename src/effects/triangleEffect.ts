@@ -110,37 +110,20 @@ const splitTriangles = (points: number[][]) => {
   const rotationA = -angleFrom(DA, Constants.unitX);
   const rotationB = -angleFrom(DB, Constants.unitY);
 
-  const coverFactor = 0;
-
   // Calculate scales
   const DCLength =
-    coverFactor +
     vec2.length(vec2.subtract(vec2.create(), C, D)) / Constants.triangleSize;
   const scaleA = vec2.fromValues(
-    coverFactor + vec2.length(DA) / Constants.triangleSize,
+    vec2.length(DA) / Constants.triangleSize,
     DCLength
   );
   const scaleB = vec2.fromValues(
     DCLength,
-    coverFactor + vec2.length(DB) / Constants.triangleSize
+    vec2.length(DB) / Constants.triangleSize
   );
 
-  const offsetFactor = 0;
-
-  const offsetAngleA = -((Math.PI * 3) / 4) + rotationA;
-  const offsetA = vec2.fromValues(
-    Math.cos(offsetAngleA) * offsetFactor,
-    Math.sin(offsetAngleA) * offsetFactor
-  );
-
-  const offsetAngleB = -((Math.PI * 3) / 4) + rotationB;
-  const offsetB = vec2.fromValues(
-    Math.cos(offsetAngleB) * offsetFactor,
-    Math.sin(offsetAngleB) * offsetFactor
-  );
-
-  const positionA = vec2.add(vec2.create(), D, offsetA);
-  const positionB = vec2.add(vec2.create(), D, offsetB);
+  const positionA = D;
+  const positionB = D;
 
   return [
     { position: positionA, rotation: rotationA, scale: scaleA },
