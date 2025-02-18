@@ -11,5 +11,5 @@ export default function endEffect(storyboard: Storyboard) {
   );
   const scale = vec2.fromValues(856, 482);
   sprite.scale(Easing.Linear, 0, 999999, scale, scale);
-  sprite.fade(Easing.EasingIn, 163575, 168112, 0, 1);
+  sprite.fade(Easing.EasingIn, 163575, 173896, 0, 1);
 }

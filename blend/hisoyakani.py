@@ -22,7 +22,7 @@ scene = bpy.data.scenes[0]
 camera = scene.camera
 
 frame = 0
-frame_end = 900
+frame_end = 5230
 frame_rate = 10
 
 while frame < frame_end:
@@ -120,7 +120,7 @@ while frame < frame_end:
     frame_data = [
         {
             "points": [[point.x, point.y] for point in face_data["points"]],
-            "material": material,
+            "material": face_data["material"],
         }
     for face_data in frame_data]
 

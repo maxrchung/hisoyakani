@@ -7,7 +7,7 @@ export const Constants = {
   frameDelta: 10,
   unitX: vec2.fromValues(1, 0),
   unitY: vec2.fromValues(0, 1),
-  triangleSize: 100,
+  triangleSize: 128,
   screenSize: vec2.fromValues(854, 480),
   // 0,0 in OSB coordinates is offset from actual top left spot
   screenOffset: vec2.fromValues(-107, 0),

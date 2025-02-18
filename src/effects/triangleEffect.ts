@@ -31,16 +31,10 @@ export default function trianglesPart(storyboard: Storyboard) {
       const file = Material[material.toString()];
 
       // Split arbitrary triangle into 2 right-sided triangles
-      const { position, rotationA, rotationB, scaleA, scaleB } =
-        splitTriangles(points);
-
-      const triangles: [number, vec2][] = [
-        [rotationA, scaleA],
-        [rotationB, scaleB],
-      ];
+      const triangles = splitTriangles(points);
 
       // Rotate triangles into place
-      triangles.forEach(([rotation, scale]) => {
+      triangles.forEach(({ position, rotation, scale }) => {
         const previousTriangle = getPrevious(
           position,
           rotation,
@@ -92,11 +86,11 @@ const splitTriangles = (points: number[][]) => {
 
   // Ensure points are valid for projection otherwise move them forward
   if (!isValidProjection(AB, AC)) {
-    rotateVectors(A, B, C, AB, AC);
+    rotateValues(A, B, C, AB, AC);
 
     // This can happen a maximum of twice so do it one more time if needed
     if (!isValidProjection(AB, AC)) {
-      rotateVectors(A, B, C, AB, AC);
+      rotateValues(A, B, C, AB, AC);
     }
   }
 
@@ -116,29 +110,42 @@ const splitTriangles = (points: number[][]) => {
   const rotationA = -angleFrom(DA, Constants.unitX);
   const rotationB = -angleFrom(DB, Constants.unitY);
 
+  const coverFactor = 0;
+
   // Calculate scales
   const DCLength =
+    coverFactor +
     vec2.length(vec2.subtract(vec2.create(), C, D)) / Constants.triangleSize;
   const scaleA = vec2.fromValues(
-    vec2.length(DA) / Constants.triangleSize,
+    coverFactor + vec2.length(DA) / Constants.triangleSize,
     DCLength
   );
   const scaleB = vec2.fromValues(
     DCLength,
-    vec2.length(DB) / Constants.triangleSize
+    coverFactor + vec2.length(DB) / Constants.triangleSize
   );
 
-  const position = D;
+  const offsetFactor = 0;
 
-  return {
-    // Position is shared between the two right triangles, only rotations and
-    // scales differ
-    position,
-    rotationA,
-    rotationB,
-    scaleA,
-    scaleB,
-  };
+  const offsetAngleA = -((Math.PI * 3) / 4) + rotationA;
+  const offsetA = vec2.fromValues(
+    Math.cos(offsetAngleA) * offsetFactor,
+    Math.sin(offsetAngleA) * offsetFactor
+  );
+
+  const offsetAngleB = -((Math.PI * 3) / 4) + rotationB;
+  const offsetB = vec2.fromValues(
+    Math.cos(offsetAngleB) * offsetFactor,
+    Math.sin(offsetAngleB) * offsetFactor
+  );
+
+  const positionA = vec2.add(vec2.create(), D, offsetA);
+  const positionB = vec2.add(vec2.create(), D, offsetB);
+
+  return [
+    { position: positionA, rotation: rotationA, scale: scaleA },
+    { position: positionB, rotation: rotationB, scale: scaleB },
+  ];
 };
 
 const getPrevious = (
@@ -198,8 +205,8 @@ const isValidProjection = (AB: vec2, AC: vec2) => {
   return true;
 };
 
-// Rotates vectors such that A -> B, B -> C, C -> A
-const rotateVectors = (A: vec2, B: vec2, C: vec2, AB: vec2, AC: vec2) => {
+// Rotates vector values such that A -> B, B -> C, C -> A
+const rotateValues = (A: vec2, B: vec2, C: vec2, AB: vec2, AC: vec2) => {
   const temp = vec2.copy(vec2.create(), A);
   vec2.copy(A, B);
   vec2.copy(B, C);
