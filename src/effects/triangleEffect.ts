@@ -11,6 +11,7 @@ import ScaleCommand from "../storyboard/commands/scaleCommand";
 import Sprite from "../storyboard/sprite";
 import data from "../../blend/hisoyakani.json";
 import Easing from "../storyboard/easing";
+import Material from "../material";
 
 export default function trianglesPart(storyboard: Storyboard) {
   // We want to keep track of the previous triangles so if we find that 2
@@ -27,7 +28,7 @@ export default function trianglesPart(storyboard: Storyboard) {
     const current: Sprite[] = [];
 
     for (const { points, material } of triangles) {
-      const file = material.toString();
+      const file = Material[material.toString()];
 
       // Split arbitrary triangle into 2 right-sided triangles
       const { position, rotationA, rotationB, scaleA, scaleB } =
@@ -140,33 +141,6 @@ const splitTriangles = (points: number[][]) => {
   };
 };
 
-// In our projection scenario we need to make sure several properties are met
-const isValidProjection = (AB: vec2, AC: vec2) => {
-  // AC must be smaller than AB
-  if (vec2.squaredLength(AC) > vec2.squaredLength(AB)) {
-    return false;
-  }
-
-  const angle = Math.abs(angleFrom(AB, AC));
-  // The angle between AB and AC must be < 90 degrees
-  if (angle >= Math.PI / 2) {
-    return false;
-  }
-
-  return true;
-};
-
-// Rotates vectors such that A -> B, B -> C, C -> A
-const rotateVectors = (A: vec2, B: vec2, C: vec2, AB: vec2, AC: vec2) => {
-  const temp = vec2.copy(vec2.create(), A);
-  A = B;
-  B = C;
-  C = temp;
-
-  vec2.subtract(AB, B, A);
-  vec2.subtract(AC, C, A);
-};
-
 const getPrevious = (
   position: vec2,
   rotation: number,
@@ -206,4 +180,30 @@ const getPrevious = (
 
   // If there is no previous then we will naturally return undefined
   return;
+};
+
+// In our projection scenario we need to make sure several properties are met
+const isValidProjection = (AB: vec2, AC: vec2) => {
+  // AC must be smaller than AB
+  if (vec2.squaredLength(AC) > vec2.squaredLength(AB)) {
+    return false;
+  }
+
+  const angle = Math.abs(angleFrom(AB, AC));
+  // The angle between AB and AC must be < 90 degrees
+  if (angle >= Math.PI / 2) {
+    return false;
+  }
+
+  return true;
+};
+
+// Rotates vectors such that A -> B, B -> C, C -> A
+const rotateVectors = (A: vec2, B: vec2, C: vec2, AB: vec2, AC: vec2) => {
+  const temp = vec2.copy(vec2.create(), A);
+  vec2.copy(A, B);
+  vec2.copy(B, C);
+  vec2.copy(C, temp);
+  vec2.subtract(AB, B, A);
+  vec2.subtract(AC, C, A);
 };

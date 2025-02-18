@@ -21,8 +21,8 @@ data = []
 scene = bpy.data.scenes[0]
 camera = scene.camera
 
-frame_end = 250
 frame = 0
+frame_end = 900
 frame_rate = 10
 
 while frame < frame_end:
@@ -38,11 +38,12 @@ while frame < frame_end:
     scene.frame_set(frame)
 
     objects = []
-    for object in bpy.data.objects:
+    for object in scene.objects:
         if not object.visible_get():
             continue
         
-        if object.name == "Camera":
+        # Ignore things like camera and rigs
+        if object.type != "MESH":
             continue
         
         # Only consider objects that have some scale value
@@ -53,6 +54,8 @@ while frame < frame_end:
             
     visible_faces = []
     for object in objects:
+        material_slots = object.material_slots
+        
         mesh = bmesh.new()
         mesh.from_mesh(object.data)
         
@@ -96,8 +99,8 @@ while frame < frame_end:
             
             max_z = max(points, key=lambda point: point.z)
             
-            material = face.material_index
-            
+            # This will be something like red, skin, black, etc.
+            material = material_slots[face.material_index].name
             
             face_data = {
                 "points": points,
