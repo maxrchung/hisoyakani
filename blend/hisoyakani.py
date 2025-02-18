@@ -39,6 +39,9 @@ while frame < frame_end:
 
     objects = []
     for object in bpy.data.objects:
+        if not object.visible_get():
+            continue
+        
         if object.name == "Camera":
             continue
         

@@ -3,22 +3,45 @@ import ScaleCommand from "./commands/scaleCommand";
 import FadeCommand from "./commands/fadeCommand";
 import RotateCommand from "./commands/rotateCommand";
 import { formatNumber } from "../common";
+import Easing from "./easing";
 
 export default class Sprite {
   commands: (ScaleCommand | RotateCommand | FadeCommand)[] = [];
 
   constructor(public file: string, public position: vec2) {}
 
-  scale(start: number, end: number, startScale: vec2, endScale: vec2) {
-    this.commands.push(new ScaleCommand(start, end, startScale, endScale));
+  scale(
+    easing: Easing,
+    start: number,
+    end: number,
+    startScale: vec2,
+    endScale: vec2
+  ) {
+    this.commands.push(
+      new ScaleCommand(easing, start, end, startScale, endScale)
+    );
   }
 
-  rotate(start: number, end: number, startRotate: number, endRotate: number) {
-    this.commands.push(new RotateCommand(start, end, startRotate, endRotate));
+  rotate(
+    easing: Easing,
+    start: number,
+    end: number,
+    startRotate: number,
+    endRotate: number
+  ) {
+    this.commands.push(
+      new RotateCommand(easing, start, end, startRotate, endRotate)
+    );
   }
 
-  fade(start: number, end: number, startFade: number, endFade: number) {
-    this.commands.push(new FadeCommand(start, end, startFade, endFade));
+  fade(
+    easing: Easing,
+    start: number,
+    end: number,
+    startFade: number,
+    endFade: number
+  ) {
+    this.commands.push(new FadeCommand(easing, start, end, startFade, endFade));
   }
 
   write(builder: string[]) {
