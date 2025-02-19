@@ -8,9 +8,17 @@
 // Wtf dope sheet is playing 10% slower for some reason
 
 // Apply armature  to mesh somehow
-// Fix single face objects
-// Proper background
+// Done using depsgraph
+
+// Setup background
 // Proper foreground
+
+// Fix Z overlaps
+
+// Fix single face objects
+
+// Proper background
+
 // Better colors?
 // Smoke effect
 // Better animation

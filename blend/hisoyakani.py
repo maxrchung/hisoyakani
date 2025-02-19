@@ -21,8 +21,10 @@ data = []
 scene = bpy.data.scenes[0]
 camera = scene.camera
 
+depsgraph = bpy.context.evaluated_depsgraph_get()
+
 frame = 0
-frame_end = 5230
+frame_end = 5270
 frame_rate = 10
 
 while frame < frame_end:
@@ -56,8 +58,13 @@ while frame < frame_end:
     for object in objects:
         material_slots = object.material_slots
         
+        # Idk but chat gpt :clown:
+        # Something about applying modifiers so armature applies
+        evaluated_object = object.evaluated_get(depsgraph)
+        evaluated_mesh = evaluated_object.to_mesh()
+        
         mesh = bmesh.new()
-        mesh.from_mesh(object.data)
+        mesh.from_mesh(evaluated_mesh)
         
         # bmesh will initially be in local coordinates
         # We need to transform so that we get it in world coordinates
@@ -84,7 +91,7 @@ while frame < frame_end:
                     # Transform point to how it looks in camera
                     bpy_extras.object_utils.world_to_camera_view(scene, camera, face.verts[index].co),
                 )
-                
+                  
             # Check out of bounds
             is_out_of_bounds = True
             for point in points:
@@ -97,7 +104,7 @@ while frame < frame_end:
                 continue
             
             
-            max_z = max(points, key=lambda point: point.z)
+            min_z = min(points, key=lambda point: point.z).z
             
             # This will be something like red, skin, black, etc.
             material = material_slots[face.material_index].name
@@ -105,16 +112,17 @@ while frame < frame_end:
             face_data = {
                 "points": points,
                 "material": material,
-                "max_z": max_z
+                "min_z": min_z
             }
             
             frame_data.append(face_data)
-                    
+        
+        evaluated_object.to_mesh_clear()
         mesh.free()
         
         
     # Sort the faces by descending Z value so we can draw back to front
-    frame_data = sorted(frame_data, key=lambda face_data: -face_data["max_z"])
+    frame_data = sorted(frame_data, key=lambda face_data: -face_data["min_z"])
 
     # Remap so we can drop the Z data
     frame_data = [

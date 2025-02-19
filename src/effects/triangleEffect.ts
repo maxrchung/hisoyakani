@@ -23,6 +23,8 @@ export default function trianglesPart(storyboard: Storyboard) {
   const frames = data;
 
   for (const { frame, triangles } of data) {
+    console.log(`Processing ${frame}`);
+
     const start = frame * Constants.frameRate;
     const end = start + Constants.frameDelta * Constants.frameRate;
     const current: Sprite[] = [];
