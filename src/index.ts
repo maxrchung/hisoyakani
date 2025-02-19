@@ -5,9 +5,14 @@
 // 128 with 2px over diagonal is probably ok for now
 
 // Fix frame timing
+// Wtf dope sheet is playing 10% slower for some reason
+
 // Apply armature  to mesh somehow
-// Add background/foreground effect
+// Fix single face objects
+// Proper background
+// Proper foreground
 // Better colors?
+// Smoke effect
 // Better animation
 
 import Storyboard from "./storyboard";
