@@ -35,8 +35,7 @@ export default function trianglesPart(storyboard: Storyboard) {
       // Split arbitrary triangle into 2 right-sided triangles
       const triangles = splitTriangles(points);
 
-      // Rotate triangles into place
-      triangles.forEach(({ position, rotation, scale }) => {
+      for (const { position, rotation, scale } of triangles) {
         const previousTriangle = getPrevious(
           position,
           rotation,
@@ -45,14 +44,21 @@ export default function trianglesPart(storyboard: Storyboard) {
         );
 
         if (previousTriangle) {
+          let foundPrevious = false;
+
           for (const command of previousTriangle.commands) {
             // Since we arbitrarily set the end in the rotate command, we only
             // need to adjust that
             if (command instanceof RotateCommand) {
               command.end = end;
               current.push(previousTriangle);
-              return;
+              foundPrevious = true;
+              break;
             }
+          }
+
+          if (foundPrevious) {
+            continue;
           }
         }
 
@@ -60,7 +66,7 @@ export default function trianglesPart(storyboard: Storyboard) {
         sprite.rotate(Easing.Linear, start, end, rotation, rotation);
         sprite.scale(Easing.Linear, start, start, scale, scale);
         current.push(sprite);
-      });
+      }
 
       // TODO: Testing
       // for (const point of points) {

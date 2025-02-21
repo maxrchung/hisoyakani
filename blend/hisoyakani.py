@@ -91,12 +91,17 @@ while frame < frame_end:
                     # Transform point to how it looks in camera
                     bpy_extras.object_utils.world_to_camera_view(scene, camera, face.verts[index].co),
                 )
+                
+            # ??? Some weird case where all points could equal each other
+            if points[0].x == points[1].x and points[0].x == points[2].x and points[0].y == points[1].y and points[0].y == points[2].y:
+                continue
                   
             # Check out of bounds
             is_out_of_bounds = True
             for point in points:
                 # If there is a point that is in bounds, then we keep the face
-                if point.x > 0.0 and point.x < 1.0 and point.y > 0.0 and point.y < 1.0:
+                # point.z check is needed because there could objects behind camera that are in bounds
+                if point.z > 0 and point.x > 0.0 and point.x < 1.0 and point.y > 0.0 and point.y < 1.0:
                     is_out_of_bounds = False
                     break
             
