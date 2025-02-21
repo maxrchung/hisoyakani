@@ -1,3 +1,6 @@
+# Really large data file that Blender scripting generates
+hisoyakani.json
+
 # Logs
 logs
 *.log
