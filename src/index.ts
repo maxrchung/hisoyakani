@@ -12,7 +12,9 @@
 // Done using depsgraph
 
 // Setup background
+// Done, maybe the light pink color is a little too weird though, I think it may be okay
 // Proper foreground
+// Done
 
 // Fix NaN values
 // Could need a Z >= 0 check in blender script
@@ -36,9 +38,9 @@ import endEffect from "./effects/endEffect";
 
 const storyboard = new Storyboard();
 
-// backgroundEffect(storyboard);
+backgroundEffect(storyboard);
 triangleEffect(storyboard);
-// smokeEffect(storyboard);
+smokeEffect(storyboard);
 endEffect(storyboard);
 
 const path =
