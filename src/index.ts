@@ -7,6 +7,7 @@
 // Fix frame timing
 // Wtf dope sheet is playing 10% slower for some reason
 // Still slightly off??? Could just be bluetooth
+// Solved, 1000/30 is 33.333 repeating
 
 // Apply armature to mesh somehow
 // Done using depsgraph
@@ -21,8 +22,10 @@
 // I did the Z check but seems the NaNs came from triangles that had the location for all 3 points
 
 // Fix Z overlaps
+// Trying to compare Z based on face
 
 // Fix single face objects
+// WIP, note that we can't just solidify the people otherwise there's too many faces
 
 // Proper background
 

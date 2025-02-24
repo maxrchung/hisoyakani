@@ -12,8 +12,8 @@ export default class FadeCommand {
 
   write() {
     const easing = this.easing;
-    const start = this.start;
-    const end = this.end === this.start ? "" : this.end;
+    const start = Math.round(this.start);
+    const end = isNumberEqual(this.end, this.start) ? "" : Math.round(this.end);
     const startFade = formatNumber(this.startFade);
     const endFade = isNumberEqual(this.endFade, this.startFade)
       ? ""

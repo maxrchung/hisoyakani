@@ -1,5 +1,5 @@
 import { vec2 } from "gl-matrix";
-import { formatNumber } from "../../common";
+import { formatNumber, isNumberEqual } from "../../common";
 import Easing from "../easing";
 
 export default class ScaleCommand {
@@ -13,8 +13,8 @@ export default class ScaleCommand {
 
   write() {
     const easing = this.easing;
-    const start = this.start;
-    const end = this.end === this.start ? "" : this.end;
+    const start = Math.round(this.start);
+    const end = isNumberEqual(this.end, this.start) ? "" : Math.round(this.end);
     const startScale = `${formatNumber(this.startScale[0])},${formatNumber(
       this.startScale[1]
     )}`;

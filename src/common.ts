@@ -3,10 +3,10 @@ import Storyboard from "./storyboard";
 import Easing from "./storyboard/easing";
 
 export const Constants = {
-  // No idea why but seems like dopesheet is playing 10% slower instead of the
-  // assigned 30 fps ?????
-  frameRate: 33,
-  frameDelta: 10,
+  // 1000 / 30 is 33.333333 repeating
+  frameRate: 1000 / 30,
+  // Because of above, all frame rates need to be in multiples of 3
+  frameDelta: 9,
   unitX: vec2.fromValues(1, 0),
   unitY: vec2.fromValues(0, 1),
   triangleSize: 128,

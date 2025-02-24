@@ -24,8 +24,10 @@ camera = scene.camera
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
 frame = 0
-frame_end = 5270
-frame_rate = 10
+frame_end = 5250
+
+# Must be multiple of 3
+frame_rate = 9
 
 while frame < frame_end:
     print("Processing ", frame)
@@ -71,11 +73,16 @@ while frame < frame_end:
         mesh.transform(object.matrix_world)
 
         # Some faces will have 4 or more points so this will guarantee 3 point faces    
-        bmesh.ops.triangulate(mesh, faces=mesh.faces)
-        # Dunno but this seems necessary after triangulate operation
+        triangulate = bmesh.ops.triangulate(mesh, faces=mesh.faces)
+        face_map = triangulate["face_map"]
+        # Dunno but this seems necessary for triangulate operation
         mesh.faces.ensure_lookup_table()
         
-        for face in mesh.faces:
+        # Map of original face index to z-depth calculation
+        z_depths = {}
+        face_datas = []
+        
+        for face in triangulate["faces"]:
             # Simple backface cull by comparing normal against camera position
             # This doesn't seem like it takes account perspective so ionno if it's a perfect solution
             location = face.calc_center_median()
@@ -108,8 +115,10 @@ while frame < frame_end:
             if is_out_of_bounds:
                 continue
             
+            z_depth = min(points, key=lambda point: point.z).z
             
-            min_z = min(points, key=lambda point: point.z).z
+            if face not in z_depths or z_depth < z_depths[face]:
+                z_depths[face] = z_depth
             
             # This will be something like red, skin, black, etc.
             material = material_slots[face.material_index].name
@@ -117,19 +126,24 @@ while frame < frame_end:
             face_data = {
                 "points": points,
                 "material": material,
-                "min_z": min_z
+                "original_face": face,
             }
-            
+            face_datas.append(face_data)
+        
+        for face_data in face_datas:
+            z_depth = z_depths[face_data["original_face"]]
+            face_data["z_depth"] = z_depth
             frame_data.append(face_data)
+        
         
         evaluated_object.to_mesh_clear()
         mesh.free()
         
         
     # Sort the faces by descending Z value so we can draw back to front
-    frame_data = sorted(frame_data, key=lambda face_data: -face_data["min_z"])
+    frame_data = sorted(frame_data, key=lambda face_data: -face_data["z_depth"])
 
-    # Remap so we can drop the Z data
+    # Remap so we can drop the extra data
     frame_data = [
         {
             "points": [[point.x, point.y] for point in face_data["points"]],
