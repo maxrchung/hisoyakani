@@ -23,6 +23,7 @@
 
 // Fix Z overlaps
 // Trying to compare Z based on face
+// I think have a pretty good solution - custom comparator of 2 triangles, determining which triangle is in front or behind another, use ChatGPT to figure out algorithm :clown:
 
 // Fix single face objects
 // WIP, note that we can't just solidify the people otherwise there's too many faces

@@ -25,8 +25,9 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 
 frame = 0
 frame_end = 5250
+frame_end = 9
 
-# Must be multiple of 3
+# Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
 
 while frame < frame_end:
@@ -74,15 +75,17 @@ while frame < frame_end:
 
         # Some faces will have 4 or more points so this will guarantee 3 point faces    
         triangulate = bmesh.ops.triangulate(mesh, faces=mesh.faces)
+        faces = triangulate["faces"]
         face_map = triangulate["face_map"]
+        
         # Dunno but this seems necessary for triangulate operation
         mesh.faces.ensure_lookup_table()
-        
+
         # Map of original face index to z-depth calculation
         z_depths = {}
         face_datas = []
         
-        for face in triangulate["faces"]:
+        for face in faces:
             # Simple backface cull by comparing normal against camera position
             # This doesn't seem like it takes account perspective so ionno if it's a perfect solution
             location = face.calc_center_median()
@@ -115,10 +118,11 @@ while frame < frame_end:
             if is_out_of_bounds:
                 continue
             
+            # Calculate z_depth value for the overall face, not just triangulated face
             z_depth = min(points, key=lambda point: point.z).z
-            
-            if face not in z_depths or z_depth < z_depths[face]:
-                z_depths[face] = z_depth
+            original_face = face_map[face]
+            if original_face not in z_depths or z_depth < z_depths[original_face]:
+                z_depths[original_face] = z_depth
             
             # This will be something like red, skin, black, etc.
             material = material_slots[face.material_index].name
@@ -126,7 +130,7 @@ while frame < frame_end:
             face_data = {
                 "points": points,
                 "material": material,
-                "original_face": face,
+                "original_face": original_face,
             }
             face_datas.append(face_data)
         
@@ -134,7 +138,6 @@ while frame < frame_end:
             z_depth = z_depths[face_data["original_face"]]
             face_data["z_depth"] = z_depth
             frame_data.append(face_data)
-        
         
         evaluated_object.to_mesh_clear()
         mesh.free()
