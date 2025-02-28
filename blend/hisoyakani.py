@@ -4,9 +4,85 @@ import json
 import bpy_extras
 import pprint
 import os
+from functools import cmp_to_key
 
-print(os.getcwd())
 
+# Get plane equation from vertices of triangle
+def plane_equation(verts):
+    A = verts[0]
+    B = verts[1]
+    C = verts[2]
+    
+    AB = B - A
+    BC = C - B
+
+    normal = AB.cross(BC)
+    planeA, planeB, planeC = normal.x, normal.y, normal.z
+    
+    return planeA, planeB, planeC
+
+def compare_vert(plane, vert):
+    A, B, C = plane
+    D = A * vert.x + B * vert.y + C * vert.z
+    
+    if D >= 0:
+        return "F" # front
+    
+    return "B" # behind
+
+def compare_verts(plane, verts):
+    A, B, C = plane
+    
+    checks = []
+    for vert in verts:
+        check = compare_vert(plane, vert)
+        checks.append(check)
+        
+    if all(check == "front" in verts):
+        return "F" # front
+    
+    if all(check == "behind" in verts):
+        return "B" # behind
+    
+    return "I" # indeterminate
+    
+# Compare function that denotes draw order
+# -1 means should be behind, 1 means should be in front
+# Use a closure so we can reference camera location
+def compare_triangles(camera_location)
+    def compare(A, B):
+        vertsA = A["verts"]
+        vertsB = B["verts"]
+        
+        plane = plane_equation(vertsB)
+        camera = compare_vert(plane, camera_location)
+        check = compare_verts(plane, vertsA)
+        swapped = 1
+        
+        if check == "I":
+            plane = plane_equation(vertsA)
+            camera = compare_vert(plane, camera_location)
+            check = compare_verts(plane, vertsB)
+            swapped = -1
+            
+            # We're screwed, abort
+            if check == "I":
+                return 0
+        
+        if check == "F" and camera == "F":
+            return 1 * swapped
+        
+        if check == "F" and camera == "B":
+            return -1 * swapped
+        
+        if check == "B" and camera == "F":
+            return -1 * swapped
+        
+        # if check == "B" and camera == "B":
+        return 1 * swapped
+        
+    return compare
+    
 print()
 print("start")
 
@@ -25,7 +101,7 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 
 frame = 0
 frame_end = 5250
-frame_end = 9
+frame_end = 5250
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
@@ -57,35 +133,26 @@ while frame < frame_end:
         
         objects.append(object)
             
-    visible_faces = []
     for object in objects:
         material_slots = object.material_slots
         
-        # Idk but chat gpt :clown:
         # Something about applying modifiers so armature applies
         evaluated_object = object.evaluated_get(depsgraph)
         evaluated_mesh = evaluated_object.to_mesh()
         
         mesh = bmesh.new()
         mesh.from_mesh(evaluated_mesh)
-        
+
         # bmesh will initially be in local coordinates
         # We need to transform so that we get it in world coordinates
         mesh.transform(object.matrix_world)
 
         # Some faces will have 4 or more points so this will guarantee 3 point faces    
-        triangulate = bmesh.ops.triangulate(mesh, faces=mesh.faces)
-        faces = triangulate["faces"]
-        face_map = triangulate["face_map"]
-        
+        bmesh.ops.triangulate(mesh, faces=mesh.faces)
         # Dunno but this seems necessary for triangulate operation
         mesh.faces.ensure_lookup_table()
 
-        # Map of original face index to z-depth calculation
-        z_depths = {}
-        face_datas = []
-        
-        for face in faces:
+        for face in mesh.faces:
             # Simple backface cull by comparing normal against camera position
             # This doesn't seem like it takes account perspective so ionno if it's a perfect solution
             location = face.calc_center_median()
@@ -95,12 +162,15 @@ while frame < frame_end:
             if normal.dot(view_direction) > 0:
                 continue
 
+            verts = []
             points = []
             for index in range(3):
-                points.append(
-                    # Transform point to how it looks in camera
-                    bpy_extras.object_utils.world_to_camera_view(scene, camera, face.verts[index].co),
-                )
+                vert = face.verts[index].co
+                verts.append(vert)
+                
+                # Transform point to how it looks in camera
+                point = bpy_extras.object_utils.world_to_camera_view(scene, camera, vert)
+                points.append(point)
                 
             # ??? Some weird case where all points could equal each other
             if points[0].x == points[1].x and points[0].x == points[2].x and points[0].y == points[1].y and points[0].y == points[2].y:
@@ -118,25 +188,15 @@ while frame < frame_end:
             if is_out_of_bounds:
                 continue
             
-            # Calculate z_depth value for the overall face, not just triangulated face
-            z_depth = min(points, key=lambda point: point.z).z
-            original_face = face_map[face]
-            if original_face not in z_depths or z_depth < z_depths[original_face]:
-                z_depths[original_face] = z_depth
-            
             # This will be something like red, skin, black, etc.
             material = material_slots[face.material_index].name
             
             face_data = {
-                "points": points,
+                # Just keep the X, Y positions for points
+                "points": [[point.x, point.y] for point in points],
                 "material": material,
-                "original_face": original_face,
+                "verts": verts
             }
-            face_datas.append(face_data)
-        
-        for face_data in face_datas:
-            z_depth = z_depths[face_data["original_face"]]
-            face_data["z_depth"] = z_depth
             frame_data.append(face_data)
         
         evaluated_object.to_mesh_clear()
@@ -144,12 +204,12 @@ while frame < frame_end:
         
         
     # Sort the faces by descending Z value so we can draw back to front
-    frame_data = sorted(frame_data, key=lambda face_data: -face_data["z_depth"])
+    frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera.location))
 
-    # Remap so we can drop the extra data
+    # Remap so we can drop the verts data
     frame_data = [
         {
-            "points": [[point.x, point.y] for point in face_data["points"]],
+            "points": face_data["points"],
             "material": face_data["material"],
         }
     for face_data in frame_data]
