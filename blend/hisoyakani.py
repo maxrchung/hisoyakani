@@ -7,41 +7,70 @@ import os
 from functools import cmp_to_key
 
 
+print()
+print("start")
+
+"""
+{
+    frame: number,
+    triangles: Frame_Data[]
+}
+"""
+data = []
+
+scene = bpy.data.scenes[0]
+camera = scene.camera
+
+depsgraph = bpy.context.evaluated_depsgraph_get()
+
+frame = 0
+frame_end = 5250
+frame_end = 1000
+
+# Must be multiple of 3 so actual time rounds to an integer
+frame_rate = 9
+
+epsilon = 1e-6
+
 # Get plane equation from vertices of triangle
 def plane_equation(verts):
-    A = verts[0]
-    B = verts[1]
-    C = verts[2]
+    a = verts[0]
+    b = verts[1]
+    c = verts[2]
     
-    AB = B - A
-    BC = C - B
+    ab = b - a
+    ac = c - a
 
-    normal = AB.cross(BC)
-    planeA, planeB, planeC = normal.x, normal.y, normal.z
+    normal = ab.cross(ac)
+    normal.normalize()
+    A, B, C = normal.x, normal.y, normal.z
+    D = -(A * a.x + B * a.y + C * a.z)
     
-    return planeA, planeB, planeC
+    return A, B, C, D
 
 def compare_vert(plane, vert):
-    A, B, C = plane
-    D = A * vert.x + B * vert.y + C * vert.z
+    A, B, C, D = plane
+    d = A * vert.x + B * vert.y + C * vert.z + D
     
-    if D >= 0:
+    if abs(d) < epsilon:
+        return "O"
+    
+    if d > 0:
         return "F" # front
-    
+
     return "B" # behind
+    
 
 def compare_verts(plane, verts):
-    A, B, C = plane
-    
     checks = []
     for vert in verts:
         check = compare_vert(plane, vert)
         checks.append(check)
         
-    if all(check == "front" in verts):
+    if all(check == "F" or check == "O" for check in checks):
         return "F" # front
     
-    if all(check == "behind" in verts):
+    if all(check == "B" or check == "O" for check in checks):
         return "B" # behind
     
     return "I" # indeterminate
@@ -49,7 +78,7 @@ def compare_verts(plane, verts):
 # Compare function that denotes draw order
 # -1 means should be behind, 1 means should be in front
 # Use a closure so we can reference camera location
-def compare_triangles(camera_location)
+def compare_triangles(camera_location):
     def compare(A, B):
         vertsA = A["verts"]
         vertsB = B["verts"]
@@ -69,43 +98,17 @@ def compare_triangles(camera_location)
             if check == "I":
                 return 0
         
-        if check == "F" and camera == "F":
+        if camera == "O":
+            return 0
+        
+        if check == camera:
             return 1 * swapped
-        
-        if check == "F" and camera == "B":
-            return -1 * swapped
-        
-        if check == "B" and camera == "F":
-            return -1 * swapped
-        
-        # if check == "B" and camera == "B":
-        return 1 * swapped
-        
+    
+        return -1 * swapped
+    
+                
     return compare
     
-print()
-print("start")
-
-"""
-{
-    frame: number,
-    triangles: Frame_Data[]
-}
-"""
-data = []
-
-scene = bpy.data.scenes[0]
-camera = scene.camera
-
-depsgraph = bpy.context.evaluated_depsgraph_get()
-
-frame = 0
-frame_end = 5250
-frame_end = 5250
-
-# Must be multiple of 3 so actual time rounds to an integer
-frame_rate = 9
-
 while frame < frame_end:
     print("Processing ", frame)
     
@@ -204,7 +207,7 @@ while frame < frame_end:
         
         
     # Sort the faces by descending Z value so we can draw back to front
-    frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera.location))
+    frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera_location)))
 
     # Remap so we can drop the verts data
     frame_data = [
