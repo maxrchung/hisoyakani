@@ -30,7 +30,7 @@ export default function trianglesPart(storyboard: Storyboard) {
     const current: Sprite[] = [];
 
     for (const { points, material } of triangles) {
-      const file = Material[material.toString()];
+      const file = Material[material.toString()] ?? 0;
 
       // Split arbitrary triangle into 2 right-sided triangles
       const triangles = splitTriangles(points);

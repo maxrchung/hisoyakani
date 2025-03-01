@@ -5,6 +5,7 @@ import bpy_extras
 import pprint
 import os
 from functools import cmp_to_key
+import pprint
 
 
 print()
@@ -42,7 +43,6 @@ def plane_equation(verts):
     ac = c - a
 
     normal = ab.cross(ac)
-    normal.normalize()
     A, B, C = normal.x, normal.y, normal.z
     D = -(A * a.x + B * a.y + C * a.z)
     
@@ -82,20 +82,29 @@ def compare_triangles(camera_location):
     def compare(A, B):
         vertsA = A["verts"]
         vertsB = B["verts"]
-        
+                
         plane = plane_equation(vertsB)
         camera = compare_vert(plane, camera_location)
         check = compare_verts(plane, vertsA)
         swapped = 1
-        
+                
         if check == "I":
             plane = plane_equation(vertsA)
             camera = compare_vert(plane, camera_location)
             check = compare_verts(plane, vertsB)
             swapped = -1
             
-            # We're screwed, abort
+            # We're screwed at this point, try to do a simple Z test
             if check == "I":
+                minA = min(vertsA, key=lambda vert: (camera_location - vert).length_squared)
+                minB = min(vertsB, key=lambda vert: (camera_location - vert).length_squared)
+                
+                if minA < minB:
+                    return 1
+                
+                if minA > minB:
+                    return -1
+                            
                 return 0
         
         if camera == "O":
@@ -109,7 +118,7 @@ def compare_triangles(camera_location):
                 
     return compare
     
-while frame < frame_end:
+while frame <= frame_end:
     print("Processing ", frame)
     
     """
@@ -120,6 +129,7 @@ while frame < frame_end:
     """
     frame_data = []
     scene.frame_set(frame)
+    camera_location = camera.matrix_world.translation
 
     objects = []
     for object in scene.objects:
@@ -135,7 +145,7 @@ while frame < frame_end:
             continue
         
         objects.append(object)
-            
+        
     for object in objects:
         material_slots = object.material_slots
         
@@ -154,12 +164,12 @@ while frame < frame_end:
         bmesh.ops.triangulate(mesh, faces=mesh.faces)
         # Dunno but this seems necessary for triangulate operation
         mesh.faces.ensure_lookup_table()
+        mesh.verts.ensure_lookup_table()
 
         for face in mesh.faces:
             # Simple backface cull by comparing normal against camera position
             # This doesn't seem like it takes account perspective so ionno if it's a perfect solution
             location = face.calc_center_median()
-            camera_location = camera.matrix_world.translation
             view_direction = (location - camera_location).normalized()
             normal = face.normal
             if normal.dot(view_direction) > 0:
@@ -168,15 +178,17 @@ while frame < frame_end:
             verts = []
             points = []
             for index in range(3):
-                vert = face.verts[index].co
+                vert = face.verts[index].co.copy()
                 verts.append(vert)
                 
                 # Transform point to how it looks in camera
                 point = bpy_extras.object_utils.world_to_camera_view(scene, camera, vert)
                 points.append(point)
-                
-            # ??? Some weird case where all points could equal each other
-            if points[0].x == points[1].x and points[0].x == points[2].x and points[0].y == points[1].y and points[0].y == points[2].y:
+            
+            # ??? Some weird cases where points could equal each other
+            if (abs(points[0].x - points[1].x) < epsilon and abs(points[0].y - points[1].y) < epsilon) or \
+               (abs(points[0].x - points[2].x) < epsilon and abs(points[0].y - points[2].y) < epsilon) or \
+               (abs(points[1].x - points[2].x) < epsilon and abs(points[1].y - points[2].y) < epsilon):
                 continue
                   
             # Check out of bounds
@@ -195,21 +207,31 @@ while frame < frame_end:
             material = material_slots[face.material_index].name
             
             face_data = {
-                # Just keep the X, Y positions for points
                 "points": [[point.x, point.y] for point in points],
                 "material": material,
-                "verts": verts
+                "verts": verts,
             }
             frame_data.append(face_data)
         
         evaluated_object.to_mesh_clear()
         mesh.free()
         
-        
-    # Sort the faces by descending Z value so we can draw back to front
-    frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera_location)))
+    # Do a quick sort of the faces by descending Z value for a rough 
+    # frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera_location)))
+    
+    # I have a suspicion sorted() doesn't work well because of way depth checks work
+    # So here we try a rudimentary bubble sort where we compare every triangle to each other
+    n = len(frame_data)
+    compare = compare_triangles(camera_location)
+    for i in range(n):
+        max = n - i - 1
+        for j in range(max):
+            comparison = compare(frame_data[j], frame_data[max])
+            if comparison == 1:
+                # Swap
+                frame_data[j], frame_data[max] = frame_data[max], frame_data[j]
 
-    # Remap so we can drop the verts data
+    # Remap so we can drop unnecessary data
     frame_data = [
         {
             "points": face_data["points"],
