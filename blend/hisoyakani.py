@@ -31,7 +31,7 @@ frame_end = 1000
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
 
-epsilon = 1e-6
+epsilon = 1e-4
 
 # Get plane equation from vertices of triangle
 def plane_equation(verts):
@@ -43,6 +43,7 @@ def plane_equation(verts):
     ac = c - a
 
     normal = ab.cross(ac)
+    normal.normalize()
     A, B, C = normal.x, normal.y, normal.z
     D = -(A * a.x + B * a.y + C * a.z)
     
@@ -96,6 +97,9 @@ def compare_triangles(camera_location):
             
             # We're screwed at this point, try to do a simple Z test
             if check == "I":
+                            
+                return 0
+                
                 minA = min(vertsA, key=lambda vert: (camera_location - vert).length_squared)
                 minB = min(vertsB, key=lambda vert: (camera_location - vert).length_squared)
                 
@@ -221,6 +225,7 @@ while frame <= frame_end:
     
     # I have a suspicion sorted() doesn't work well because of way depth checks work
     # So here we try a rudimentary bubble sort where we compare every triangle to each other
+    
     n = len(frame_data)
     compare = compare_triangles(camera_location)
     for i in range(n):
