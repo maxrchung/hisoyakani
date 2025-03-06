@@ -24,7 +24,7 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 0
+frame = 1000
 frame_end = 5250
 frame_end = 1000
 
@@ -33,95 +33,139 @@ frame_rate = 9
 
 epsilon = 1e-4
 
+class BSPNode:
+    def __init__(self, frame_data, front, back):
+        self.triangle = triangle
+        self.front = []
+        self.back = []
+
 # Get plane equation from vertices of triangle
-def plane_equation(verts):
-    a = verts[0]
-    b = verts[1]
-    c = verts[2]
+def compute_plane(triangle):
+    a = triangle[0]
+    b = triangle[1]
+    c = triangle[2]
     
     ab = b - a
     ac = c - a
 
     normal = ab.cross(ac)
+    # Don't know if this is needed
     normal.normalize()
-    A, B, C = normal.x, normal.y, normal.z
-    D = -(A * a.x + B * a.y + C * a.z)
+    D = -(normal.dot(a))
     
-    return A, B, C, D
+    return normal, D
 
-def compare_vert(plane, vert):
-    A, B, C, D = plane
-    d = A * vert.x + B * vert.y + C * vert.z + D
+def compare_triangle(vert, plane):
+    normal, D = plane
+    d = normal.dot(vert) + D
     
-    if abs(d) < epsilon:
-        return "O"
-    
-    if d > 0:
+    if d >= 0:
         return "F" # front
 
-    return "B" # behind
-    
+    return "B" # back
 
-def compare_verts(plane, verts):
+def classify_triangle(triangle, plane):
     checks = []
-    for vert in verts:
-        check = compare_vert(plane, vert)
+    for vert in triangle["verts"]:
+        check = compare_vert(vert, plane)
         checks.append(check)
-        
-    if all(check == "F" or check == "O" for check in checks):
+
+    # I think it's fine if we just decide that if it's on the plane to consider it front
+    if all(check == "F" for check in checks):
         return "F" # front
-    
-    if all(check == "B" or check == "O" for check in checks):
+
+    if all(check == "B" for check in checks):
         return "B" # behind
     
-    return "I" # indeterminate
+    return "S" # spanning
+
+def interpolate(v1, v2, d1, d2):
+        """ Linearly interpolate between v1 and v2 at plane intersection """
+        t = d1 / (d1 - d2)
+        return v1 + t * (v2 - v1)
+
+def create_triangle(verts, material, scene, camera):
+    points = []
+    for index in range(3):
+        # Transform point to how it looks in camera
+        point = bpy_extras.object_utils.world_to_camera_view(scene, camera, vert)
+        points.append(point)
+        
+    triangle = {
+        "points": points,
+        "material": material,
+        "verts": verts,
+    }
     
-# Compare function that denotes draw order
-# -1 means should be behind, 1 means should be in front
-# Use a closure so we can reference camera location
-def compare_triangles(camera_location):
-    def compare(A, B):
-        vertsA = A["verts"]
-        vertsB = B["verts"]
-                
-        plane = plane_equation(vertsB)
-        camera = compare_vert(plane, camera_location)
-        check = compare_verts(plane, vertsA)
-        swapped = 1
-                
-        if check == "I":
-            plane = plane_equation(vertsA)
-            camera = compare_vert(plane, camera_location)
-            check = compare_verts(plane, vertsB)
-            swapped = -1
+    return triangle
+    
+
+def split_triangle(triangle, plane, scene, camera):
+    verts = triangle["verts"
+    material = triangle["material"]
+    normal, D = plane
+    distances = [(vert - D).dot(normal) for vert in verts]
+    camera_location = camera.matrix_world.translation
+    d = camera_location - D.dot(normal)
+    
+    front = []
+    back = []
+    
+    for i, d in enumerate(distances):
+        if d >= 0:
+            # Track original triangle with d
+            front.append(triangle[i], d)
+        else:
+            back.append(triangle[i], d)
             
-            # We're screwed at this point, try to do a simple Z test
-            if check == "I":
-                            
-                return 0
-                
-                minA = min(vertsA, key=lambda vert: (camera_location - vert).length_squared)
-                minB = min(vertsB, key=lambda vert: (camera_location - vert).length_squared)
-                
-                if minA < minB:
-                    return 1
-                
-                if minA > minB:
-                    return -1
-                            
-                return 0
+    if len(front) == 2 and d >= 0:
+        single = back[0]
+        far1 = front[0]
+        far2 = front[1]
+    else: # len(back) == 2:
+        single = front[0]
+        far1 = back[0]
+        far2 = back[1]
+
+    split1 = interpolate(far1[0], single[0], far1[1], single[1])
+    split2 = interpolate(far2[0], single[0], far2[1], single[1])
+    
+    return [
+        create_triangle((far1[0], split1, split2), material, scene, camera),
+        create_triangle((far1[0], split2, far2[0]), material, scene, camera),
+        create_triangle((split1, single[0], split2), material, scene, camera)
+    ]
+
+def build_bsp(triangles, scene, camera):
+    front = []
+    back = []
+    
+    pivot = triangles[len(triangles) // 2]
+    plane = compute_plane(pivot)
+    classification = classify_triangles(triangle, plane)
+
+    for triangle in triangles:
+        if triangle == pivot:
+            continue
         
-        if camera == "O":
-            return 0
+        if classification == "F":
+            front.append(triangle)
+            continue
         
-        if check == camera:
-            return 1 * swapped
+        if classification == "B":
+            back.append(triangle)
+            continue
+        
+        fronts, backs = split_triangle(triangle, plane, scene, camera)
+        front += fronts
+        back += backs
     
-        return -1 * swapped
-    
-                
-    return compare
-    
+    root = BSPNode(pivot, build_bsp(front), build_bsp(back))
+    return root
+
+def traverse_bsp(bsp, camera_location, visited):
+    return
+
 while frame <= frame_end:
     print("Processing ", frame)
     
@@ -131,7 +175,6 @@ while frame <= frame_end:
         material: string
     }
     """
-    frame_data = []
     scene.frame_set(frame)
     camera_location = camera.matrix_world.translation
 
@@ -150,6 +193,7 @@ while frame <= frame_end:
         
         objects.append(object)
         
+    triangles = []
     for object in objects:
         material_slots = object.material_slots
         
@@ -166,7 +210,7 @@ while frame <= frame_end:
 
         # Some faces will have 4 or more points so this will guarantee 3 point faces    
         bmesh.ops.triangulate(mesh, faces=mesh.faces)
-        # Dunno but this seems necessary for triangulate operation
+        # Dunno but this seems necessary for triangulate operation?
         mesh.faces.ensure_lookup_table()
         mesh.verts.ensure_lookup_table()
 
@@ -180,14 +224,13 @@ while frame <= frame_end:
                 continue
 
             verts = []
-            points = []
             for index in range(3):
                 vert = face.verts[index].co.copy()
                 verts.append(vert)
-                
-                # Transform point to how it looks in camera
-                point = bpy_extras.object_utils.world_to_camera_view(scene, camera, vert)
-                points.append(point)
+            # This will be something like red, skin, black, etc.
+            material = material_slots[face.material_index].name
+            triangle = create_triangle(vert, material, scene, camera)
+            points = triangle["points"]
             
             # ??? Some weird cases where points could equal each other
             if (abs(points[0].x - points[1].x) < epsilon and abs(points[0].y - points[1].y) < epsilon) or \
@@ -203,52 +246,34 @@ while frame <= frame_end:
                 if point.z > 0 and point.x > 0.0 and point.x < 1.0 and point.y > 0.0 and point.y < 1.0:
                     is_out_of_bounds = False
                     break
-            
             if is_out_of_bounds:
                 continue
-            
-            # This will be something like red, skin, black, etc.
-            material = material_slots[face.material_index].name
-            
-            face_data = {
-                "points": [[point.x, point.y] for point in points],
-                "material": material,
-                "verts": verts,
-            }
-            frame_data.append(face_data)
+
+            triangles.append(triangle)
         
         evaluated_object.to_mesh_clear()
         mesh.free()
-        
-    # Do a quick sort of the faces by descending Z value for a rough 
-    # frame_data = sorted(frame_data, key=cmp_to_key(compare_triangles(camera_location)))
     
-    # I have a suspicion sorted() doesn't work well because of way depth checks work
-    # So here we try a rudimentary bubble sort where we compare every triangle to each other
+    bsp = build_bsp(triangles, scene, camera)
     
-    n = len(frame_data)
-    compare = compare_triangles(camera_location)
-    for i in range(n):
-        max = n - i - 1
-        for j in range(max):
-            comparison = compare(frame_data[j], frame_data[max])
-            if comparison == 1:
-                # Swap
-                frame_data[j], frame_data[max] = frame_data[max], frame_data[j]
+    triangles=[]
+    traverse_bsp(bsp, camera_location, triangles)
+    
+    # Reverse so back is drawn first in storyboard
+    triangles.reverse()
 
     # Remap so we can drop unnecessary data
-    frame_data = [
+    triangles = [
         {
-            "points": face_data["points"],
-            "material": face_data["material"],
+            "points": [[point.x, point.y] for point in points],
+            "material": triangle["material"],
         }
-    for face_data in frame_data]
+    for triangle in triangles]
 
     data.append({
         "frame": frame,
-        "triangles": frame_data,
+        "triangles": triangles,
     })
-
 
     frame += frame_rate
 
