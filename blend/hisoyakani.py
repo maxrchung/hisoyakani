@@ -33,60 +33,10 @@ frame_rate = 9
 
 epsilon = 1e-4
 
-class BSPNode:
-    def __init__(self, frame_data, front, back):
-        self.triangle = triangle
-        self.front = []
-        self.back = []
-
-# Get plane equation from vertices of triangle
-def compute_plane(triangle):
-    a = triangle[0]
-    b = triangle[1]
-    c = triangle[2]
-    
-    ab = b - a
-    ac = c - a
-
-    normal = ab.cross(ac)
-    # Don't know if this is needed
-    normal.normalize()
-    D = -(normal.dot(a))
-    
-    return normal, D
-
-def compare_triangle(vert, plane):
-    normal, D = plane
-    d = normal.dot(vert) + D
-    
-    if d >= 0:
-        return "F" # front
-
-    return "B" # back
-
-def classify_triangle(triangle, plane):
-    checks = []
-    for vert in triangle["verts"]:
-        check = compare_vert(vert, plane)
-        checks.append(check)
-
-    # I think it's fine if we just decide that if it's on the plane to consider it front
-    if all(check == "F" for check in checks):
-        return "F" # front
-
-    if all(check == "B" for check in checks):
-        return "B" # behind
-    
-    return "S" # spanning
-
-def interpolate(v1, v2, d1, d2):
-        """ Linearly interpolate between v1 and v2 at plane intersection """
-        t = d1 / (d1 - d2)
-        return v1 + t * (v2 - v1)
-
 def create_triangle(verts, material, scene, camera):
     points = []
     for index in range(3):
+        vert = verts[index]
         # Transform point to how it looks in camera
         point = bpy_extras.object_utils.world_to_camera_view(scene, camera, vert)
         points.append(point)
@@ -98,73 +48,236 @@ def create_triangle(verts, material, scene, camera):
     }
     
     return triangle
+
+class BSPNode:
+    def __init__(self, triangle, front, back):
+        self.triangle = triangle
+        self.front = front
+        self.back = back
+
+# Get plane equation from vertices of triangle
+def compute_plane(triangle):
+    verts = triangle["verts"]
     
+    a = verts[0]
+    b = verts[1]
+    c = verts[2]
+    
+    ab = b - a
+    ac = c - a
+
+    normal = ab.cross(ac)
+    # Don't know if this is needed
+    normal.normalize()
+    D = -(normal.dot(a))
+    
+    return normal, D
+
+def compare_vert(vert, plane):
+    normal, D = plane
+    d = normal.dot(vert) + D
+    
+     # I think it's fine if we just decide that if it's on the plane to consider it front
+    if d >= 0:
+        return "F" # front
+
+    return "B" # back
+
+def classify_triangle(triangle, plane):
+    checks = []
+    for vert in triangle["verts"]:
+        check = compare_vert(vert, plane)
+        checks.append(check)
+
+    if all(check == "F" for check in checks):
+        return "F" # front
+
+    if all(check == "B" for check in checks):
+        return "B" # back
+    
+    return "S" # spanning
+
+def interpolate(v1, v2, d1, d2):
+    """ Linearly interpolate between v1 and v2 at plane intersection """
+    t = d1 / (d1 - d2)
+    return v1 + t * (v2 - v1)    
 
 def split_triangle(triangle, plane, scene, camera):
-    verts = triangle["verts"
+    verts = triangle["verts"]
     material = triangle["material"]
     normal, D = plane
-    distances = [(vert - D).dot(normal) for vert in verts]
-    camera_location = camera.matrix_world.translation
-    d = camera_location - D.dot(normal)
+    distances = [normal.dot(vert) + D for vert in verts]
     
-    front = []
-    back = []
+    camera_location = camera.matrix_world.translation
+    camera_d = normal.dot(camera_location) + D
+    
+    positive = []
+    negative = []
     
     for i, d in enumerate(distances):
         if d >= 0:
             # Track original triangle with d
-            front.append(triangle[i], d)
+            positive.append((verts[i], d))
         else:
-            back.append(triangle[i], d)
-            
-    if len(front) == 2 and d >= 0:
-        single = back[0]
-        far1 = front[0]
-        far2 = front[1]
+            negative.append((verts[i], d))
+    
+    if len(positive) == 2:
+        single = negative[0]
+        far1 = positive[0]
+        far2 = positive[1]
     else: # len(back) == 2:
-        single = front[0]
-        far1 = back[0]
-        far2 = back[1]
+        single = positive[0]
+        far1 = negative[0]
+        far2 = negative[1]
 
     split1 = interpolate(far1[0], single[0], far1[1], single[1])
     split2 = interpolate(far2[0], single[0], far2[1], single[1])
     
-    return [
+    triangles = [
         create_triangle((far1[0], split1, split2), material, scene, camera),
         create_triangle((far1[0], split2, far2[0]), material, scene, camera),
         create_triangle((split1, single[0], split2), material, scene, camera)
     ]
+    
+    front = []
+    back = []
+    
+    if camera_d >= 0:
+        front = [triangles[0], triangles[1]]
+        back = [triangles[2]]
+    else:
+        front = [triangles[2]]
+        back = [triangles[0], triangles[1]]
+
+    return front, back
 
 def build_bsp(triangles, scene, camera):
     front = []
     back = []
     
-    pivot = triangles[len(triangles) // 2]
-    plane = compute_plane(pivot)
-    classification = classify_triangles(triangle, plane)
+    if len(triangles) > 0:
+        pivot = triangles[len(triangles) // 2]
+        plane = compute_plane(pivot)
+        normal, D = plane
+        camera_d = normal.dot(camera_location) + D
 
-    for triangle in triangles:
-        if triangle == pivot:
-            continue
+        for triangle in triangles:            
+            if triangle == pivot:
+                continue
+            
+            classification = classify_triangle(triangle, plane)
+            
+            if classification == "F":
+                if camera_d >= 0:
+                    front.append(triangle)
+                else:
+                    back.append(triangle)
+                continue
+            
+            if classification == "B":
+                if camera_d >= 0:
+                    front.append(triangle)
+                else:
+                    back.append(triangle)
+                continue
+            
+            fronts, backs = split_triangle(triangle, plane, scene, camera)
+            """
+            front += fronts
+            back += backs
+            """
+
+        node = BSPNode(pivot, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
         
-        if classification == "F":
-            front.append(triangle)
-            continue
+        return node
         
-        if classification == "B":
-            back.append(triangle)
-            continue
-        
-        fronts, backs = split_triangle(triangle, plane, scene, camera)
-        front += fronts
-        back += backs
+    else:
+        return None    
+
+def is_point_in_triangle(p, triangle):
+    """
+    Check if point `p` is inside the triangle defined by points `a`, `b`, and `c`
+    using barycentric coordinates.
+
+    Parameters:
+    - p: mathutils.Vector (Point to test)
+    - a, b, c: mathutils.Vector (Triangle vertices)
+
+    Returns:
+    - True if p is inside the triangle, otherwise False
+    """
     
-    root = BSPNode(pivot, build_bsp(front), build_bsp(back))
-    return root
+    points = triangle["points"]
+    a = points[0]
+    b = points[1]
+    c = points[2]
 
-def traverse_bsp(bsp, camera_location, visited):
-    return
+    # Compute vectors
+    v0 = c - a
+    v1 = b - a
+    v2 = p - a
+
+    # Compute dot products
+    dot00 = v0.dot(v0)
+    dot01 = v0.dot(v1)
+    dot02 = v0.dot(v2)
+    dot11 = v1.dot(v1)
+    dot12 = v1.dot(v2)
+
+    # Compute barycentric coordinates
+    denom = dot00 * dot11 - dot01 * dot01
+    if denom == 0:
+        return False  # Degenerate triangle (shouldn't happen in valid geometry)
+
+    u = (dot11 * dot02 - dot01 * dot12) / denom
+    v = (dot00 * dot12 - dot01 * dot02) / denom
+
+    # Check if the point is inside the triangle
+    return (u >= 0) and (v >= 0) and (u + v <= 1)
+
+# Loop through all triangles to see if triangle lies in those areas
+def is_point_in_triangles(triangle, triangles):
+    points = triangle["points"]
+    
+    """
+    for triangle in triangles:
+        if is_point_in_triangle(points[0], triangle) and \
+           is_point_in_triangle(points[1], triangle) and \
+           is_point_in_triangle(points[2], triangle):
+            return True            
+    """
+    
+    # This might be too lax because it's possible the middle parts of triangle aren't accounted for properly
+    hasFirst = False
+    hasSecond = False
+    hasThird = False
+    
+    for triangle in triangles:
+        if not hasFirst and is_point_in_triangle(points[0], triangle):
+            hasFirst = True
+            
+        if not hasSecond and is_point_in_triangle(points[1], triangle):
+            hasSecond = True
+            
+        if not hasThird and is_point_in_triangle(points[2], triangle):
+            hasThird = True
+        
+        if hasFirst and hasSecond and hasThird:
+            return True
+        
+    return False
+
+
+def traverse_bsp(bsp, triangles):
+    if bsp is None or bsp.triangle is None:
+        return
+    
+    traverse_bsp(bsp.front, triangles)
+    
+    if not is_point_in_triangles(bsp.triangle, triangles):
+        triangles.append(bsp.triangle)
+        
+    traverse_bsp(bsp.back, triangles)
 
 while frame <= frame_end:
     print("Processing ", frame)
@@ -229,7 +342,7 @@ while frame <= frame_end:
                 verts.append(vert)
             # This will be something like red, skin, black, etc.
             material = material_slots[face.material_index].name
-            triangle = create_triangle(vert, material, scene, camera)
+            triangle = create_triangle(verts, material, scene, camera)
             points = triangle["points"]
             
             # ??? Some weird cases where points could equal each other
@@ -256,8 +369,8 @@ while frame <= frame_end:
     
     bsp = build_bsp(triangles, scene, camera)
     
-    triangles=[]
-    traverse_bsp(bsp, camera_location, triangles)
+    triangles = []
+    traverse_bsp(bsp, triangles)
     
     # Reverse so back is drawn first in storyboard
     triangles.reverse()
@@ -265,7 +378,7 @@ while frame <= frame_end:
     # Remap so we can drop unnecessary data
     triangles = [
         {
-            "points": [[point.x, point.y] for point in points],
+            "points": [[point.x, point.y] for point in triangle["points"]],
             "material": triangle["material"],
         }
     for triangle in triangles]
@@ -276,7 +389,6 @@ while frame <= frame_end:
     })
 
     frame += frame_rate
-
 
 directory = os.path.dirname(bpy.data.filepath)
 path = os.path.join(directory, "hisoyakani.json")
