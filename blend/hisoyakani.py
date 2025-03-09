@@ -169,11 +169,32 @@ def split_triangle(triangle, plane, scene, camera):
     
     return backs, fronts
 
+# Pick the best pivot to reduce splits
+def pick_pivot(triangles):
+    best_pivot = triangles[0]
+    best_splits = 999999
+    
+    for pivot in triangles:
+        splits = 0
+        plane = compute_plane(pivot)
+        
+        for triangle in triangles:
+            if classify_triangle(triangle, plane) == 'S':
+                splits += 1
+        
+        if splits < best_splits:
+            best_splits = splits
+            best_pivot = pivot
+            
+    return best_pivot
+    
+
 def build_bsp(triangles, scene, camera):
     if len(triangles) == 0:
         return None
     
-    pivot = triangles[len(triangles) // 2]
+    pivot = pick_pivot(triangles)
+    #pivot = triangles[len(triangles) // 2]
     plane = compute_plane(pivot)
     normal, D = plane
     camera_location = camera.matrix_world.translation
@@ -188,11 +209,6 @@ def build_bsp(triangles, scene, camera):
             continue
         
         classification = classify_triangle(triangle, plane)
-        
-        if classification == 'S':
-            print('classification', classification)
-            print(pivot["verts"]) 
-            print(triangle["verts"])
         
         if classification == "O":
             coplane.append(triangle)
@@ -262,10 +278,9 @@ def is_point_in_triangle(p, triangle):
     return (u >= 0) and (v >= 0) and (u + v <= 1)
 
 # Loop through all triangles to see if triangle lies in those areas
-def is_point_in_triangles(triangle, triangles):
+def is_in_triangles(triangle, triangles):
     points = triangle["points"]
     
-
     for triangle in triangles:
         if is_point_in_triangle(points[0], triangle) and \
            is_point_in_triangle(points[1], triangle) and \
@@ -294,16 +309,16 @@ def is_point_in_triangles(triangle, triangles):
         
     return False
 
-
 def traverse_bsp(bsp, triangles):
     if bsp is None:
         return
     
     traverse_bsp(bsp.front, triangles)
     
-    # if not is_point_in_triangles(bsp.triangle, triangles):
+   
     for triangle in bsp.triangles:
-        triangles.append(triangle)
+        if not is_in_triangles(triangle, triangles):
+            triangles.append(triangle)
         
     traverse_bsp(bsp.back, triangles)
 
