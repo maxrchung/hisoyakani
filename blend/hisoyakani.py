@@ -24,14 +24,14 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 1000
+frame = 0
 frame_end = 5250
-frame_end = 1000
+frame_end = 0
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
 
-epsilon = 1e-4
+epsilon = 1e-6
 
 def create_triangle(verts, material, scene, camera):
     points = []
@@ -50,8 +50,8 @@ def create_triangle(verts, material, scene, camera):
     return triangle
 
 class BSPNode:
-    def __init__(self, triangle, front, back):
-        self.triangle = triangle
+    def __init__(self, triangles, front, back):
+        self.triangles = triangles
         self.front = front
         self.back = back
 
@@ -77,8 +77,10 @@ def compare_vert(vert, plane):
     normal, D = plane
     d = normal.dot(vert) + D
     
-     # I think it's fine if we just decide that if it's on the plane to consider it front
-    if d >= 0:
+    if abs(d) < epsilon:
+        return "O"
+         
+    if d > 0:
         return "F" # front
 
     return "B" # back
@@ -89,10 +91,13 @@ def classify_triangle(triangle, plane):
         check = compare_vert(vert, plane)
         checks.append(check)
 
-    if all(check == "F" for check in checks):
+    if all(check == "O" for check in checks):
+        return "O"
+
+    if all(check == "F" or check == "O" for check in checks):
         return "F" # front
 
-    if all(check == "B" for check in checks):
+    if all(check == "B" or check == "O" for check in checks):
         return "B" # back
     
     return "S" # spanning
@@ -108,91 +113,95 @@ def split_triangle(triangle, plane, scene, camera):
     normal, D = plane
     distances = [normal.dot(vert) + D for vert in verts]
     
+    front = []
+    back = []
+    
+    for i, d in enumerate(distances):
+        if abs(d) < epsilon or d > 0:
+            # Track original triangle with d
+            front.append((verts[i], d))
+        else:
+            back.append((verts[i], d))
+    
+    if len(front) == 2:
+        single = back[0]
+        far1 = front[0]
+        far2 = front[1]
+            
+    else: # len(back) == 2:
+        single = front[0]
+        far1 = back[0]
+        far2 = back[1]
+        
+    split1 = interpolate(far1[0], single[0], far1[1], single[1])
+    split2 = interpolate(far2[0], single[0], far2[1], single[1])
+    triangles = [
+        create_triangle((far1[0], split2, split1), material, scene, camera),
+        create_triangle((far1[0], far2[0], split2), material, scene, camera),
+        create_triangle((split1, split2, single[0]), material, scene, camera)
+    ]
+    
+    
+    if len(front) == 2:
+        fronts = [triangles[0], triangles[1]]
+        backs = [triangles[2]]
+    else:
+        fronts = [triangles[2]]
+        backs = [triangles[0], triangles[1]]
+    
     camera_location = camera.matrix_world.translation
     camera_d = normal.dot(camera_location) + D
     
-    positive = []
-    negative = []
+    if abs(camera_d) < 0 or camera_d > 0:
+        return fronts, backs
     
-    for i, d in enumerate(distances):
-        if d >= 0:
-            # Track original triangle with d
-            positive.append((verts[i], d))
-        else:
-            negative.append((verts[i], d))
-    
-    if len(positive) == 2:
-        single = negative[0]
-        far1 = positive[0]
-        far2 = positive[1]
-    else: # len(back) == 2:
-        single = positive[0]
-        far1 = negative[0]
-        far2 = negative[1]
-
-    split1 = interpolate(far1[0], single[0], far1[1], single[1])
-    split2 = interpolate(far2[0], single[0], far2[1], single[1])
-    
-    triangles = [
-        create_triangle((far1[0], split1, split2), material, scene, camera),
-        create_triangle((far1[0], split2, far2[0]), material, scene, camera),
-        create_triangle((split1, single[0], split2), material, scene, camera)
-    ]
-    
-    front = []
-    back = []
-    
-    if camera_d >= 0:
-        front = [triangles[0], triangles[1]]
-        back = [triangles[2]]
-    else:
-        front = [triangles[2]]
-        back = [triangles[0], triangles[1]]
-
-    return front, back
+    return backs, fronts
 
 def build_bsp(triangles, scene, camera):
+    if len(triangles) == 0:
+        return None
+    
+    pivot = triangles[len(triangles) // 2]
+    plane = compute_plane(pivot)
+    normal, D = plane
+    camera_location = camera.matrix_world.translation
+    camera_d = normal.dot(camera_location) + D
+
+    coplane = [pivot]
     front = []
     back = []
+
+    for triangle in triangles:            
+        if triangle == pivot:
+            continue
+        
+        classification = classify_triangle(triangle, plane)
+        
+        if classification == "O":
+            coplane.append(triangle)
+            continue
+        
+        if classification == "F":
+            if camera_d >= 0:
+                front.append(triangle)
+            else:
+                back.append(triangle)
+            continue
+        
+        if classification == "B":
+            if camera_d >= 0:
+                back.append(triangle)
+            else:
+                front.append(triangle)
+            continue
+        
+        fronts, backs = split_triangle(triangle, plane, scene, camera)
+        front += fronts
+        back += backs
+
+    node = BSPNode(coplane, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
     
-    if len(triangles) > 0:
-        pivot = triangles[len(triangles) // 2]
-        plane = compute_plane(pivot)
-        normal, D = plane
-        camera_d = normal.dot(camera_location) + D
-
-        for triangle in triangles:            
-            if triangle == pivot:
-                continue
-            
-            classification = classify_triangle(triangle, plane)
-            
-            if classification == "F":
-                if camera_d >= 0:
-                    front.append(triangle)
-                else:
-                    back.append(triangle)
-                continue
-            
-            if classification == "B":
-                if camera_d >= 0:
-                    front.append(triangle)
-                else:
-                    back.append(triangle)
-                continue
-            
-            fronts, backs = split_triangle(triangle, plane, scene, camera)
-            """
-            front += fronts
-            back += backs
-            """
-
-        node = BSPNode(pivot, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
-        
-        return node
-        
-    else:
-        return None    
+    return node
 
 def is_point_in_triangle(p, triangle):
     """
@@ -239,14 +248,14 @@ def is_point_in_triangle(p, triangle):
 def is_point_in_triangles(triangle, triangles):
     points = triangle["points"]
     
-    """
+
     for triangle in triangles:
         if is_point_in_triangle(points[0], triangle) and \
            is_point_in_triangle(points[1], triangle) and \
            is_point_in_triangle(points[2], triangle):
             return True            
+
     """
-    
     # This might be too lax because it's possible the middle parts of triangle aren't accounted for properly
     hasFirst = False
     hasSecond = False
@@ -264,18 +273,20 @@ def is_point_in_triangles(triangle, triangles):
         
         if hasFirst and hasSecond and hasThird:
             return True
+    """ 
         
     return False
 
 
 def traverse_bsp(bsp, triangles):
-    if bsp is None or bsp.triangle is None:
+    if bsp is None:
         return
     
     traverse_bsp(bsp.front, triangles)
     
-    if not is_point_in_triangles(bsp.triangle, triangles):
-        triangles.append(bsp.triangle)
+    # if not is_point_in_triangles(bsp.triangle, triangles):
+    for triangle in bsp.triangles:
+        triangles.append(triangle)
         
     traverse_bsp(bsp.back, triangles)
 
