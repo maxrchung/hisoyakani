@@ -31,7 +31,7 @@ frame_end = 0
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
 
-epsilon = 1e-6
+epsilon = 1e-5
 
 def create_triangle(verts, material, scene, camera):
     points = []
@@ -135,13 +135,25 @@ def split_triangle(triangle, plane, scene, camera):
         
     split1 = interpolate(far1[0], single[0], far1[1], single[1])
     split2 = interpolate(far2[0], single[0], far2[1], single[1])
-    triangles = [
-        create_triangle((far1[0], split2, split1), material, scene, camera),
-        create_triangle((far1[0], far2[0], split2), material, scene, camera),
-        create_triangle((split1, split2, single[0]), material, scene, camera)
-    ]
     
-    
+    # LOL SO HILARIOUS!!!!!!!!!!!!!!!!!!!!!!!
+    original_normal = (verts[1] - verts[0]).cross(verts[2] - verts[0])
+    original_normal.normalize()
+    split_normal = (split2 - far1[0]).cross(split1 - split2)
+    split_normal.normalize()
+    if split_normal.dot(original_normal) >= 0:
+        triangles = [
+            create_triangle((far1[0], split2, split1), material, scene, camera),
+            create_triangle((far1[0], far2[0], split2), material, scene, camera),
+            create_triangle((split1, split2, single[0]), material, scene, camera)
+        ]
+    else:
+        triangles = [
+            create_triangle((split2, far1[0], split1), material, scene, camera),
+            create_triangle((far2[0], far1[0], split2), material, scene, camera),
+            create_triangle((split2, split1, single[0]), material, scene, camera)
+        ]
+
     if len(front) == 2:
         fronts = [triangles[0], triangles[1]]
         backs = [triangles[2]]
@@ -176,6 +188,11 @@ def build_bsp(triangles, scene, camera):
             continue
         
         classification = classify_triangle(triangle, plane)
+        
+        if classification == 'S':
+            print('classification', classification)
+            print(pivot["verts"]) 
+            print(triangle["verts"])
         
         if classification == "O":
             coplane.append(triangle)
