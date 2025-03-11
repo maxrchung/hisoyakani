@@ -29,7 +29,10 @@ export default function trianglesPart(storyboard: Storyboard) {
     const end = start + Constants.frameDelta * Constants.frameRate;
     const current: Sprite[] = [];
 
+    let counter = 0;
+
     for (const { points, material } of triangles) {
+      counter++;
       const file = Material[material.toString()] ?? 0;
 
       // Split arbitrary triangle into 2 right-sided triangles
@@ -37,6 +40,7 @@ export default function trianglesPart(storyboard: Storyboard) {
 
       for (const { position, rotation, scale } of triangles) {
         const previousTriangle = getPrevious(
+          file,
           position,
           rotation,
           scale,
@@ -65,6 +69,13 @@ export default function trianglesPart(storyboard: Storyboard) {
         const sprite = storyboard.sprite(file, position);
         sprite.rotate(Easing.Linear, start, end, rotation, rotation);
         sprite.scale(Easing.Linear, start, start, scale, scale);
+        // sprite.fade(
+        //   Easing.Linear,
+        //   start,
+        //   start,
+        //   (1 / triangles.length) * counter,
+        //   (1 / triangles.length) * counter
+        // );
         current.push(sprite);
       }
 
@@ -140,13 +151,21 @@ const splitTriangles = (points: number[][]) => {
 };
 
 const getPrevious = (
+  file: string,
   position: vec2,
   rotation: number,
   scale: vec2,
   previous: Sprite[]
 ) => {
+  // This is not reliable because of layering. Going to have to see how to best address this...
+  return;
+
   // Check if we can optimize previous triangle instead of creating a new sprite
   for (const triangle of previous) {
+    if (triangle.file !== file) {
+      continue;
+    }
+
     if (!vec2.equals(triangle.position, position)) {
       continue;
     }

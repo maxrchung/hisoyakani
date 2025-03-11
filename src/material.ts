@@ -5,6 +5,7 @@ enum Material {
   skin = 2,
   tea = 3,
   teabag = 4,
+  debug = 5,
 }
 
 export default Material;
