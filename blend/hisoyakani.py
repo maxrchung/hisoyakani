@@ -26,7 +26,7 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 
 frame = 0
 frame_end = 5250
-frame_end = 0
+frame_end = 1000
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
@@ -48,6 +48,23 @@ def create_triangle(verts, material, scene, camera):
     }
     
     return triangle
+
+# Check if a triangle is degenerate (area ~ 0 or vertices too close)
+def is_degenerate(triangle):
+    verts = triangle["verts"]
+    
+    v1, v2, v3 = verts
+
+    # Check if any two points are too close
+    if (v1 - v2).length < epsilon or (v2 - v3).length < epsilon or (v3 - v1).length < epsilon:
+        return True
+
+    # Compute triangle area using cross product
+    edge1 = v2 - v1
+    edge2 = v3 - v1
+    area = edge1.cross(edge2).length / 2  # Area of triangle
+
+    return area < epsilon
 
 class BSPNode:
     def __init__(self, triangles, front, back):
@@ -113,53 +130,79 @@ def split_triangle(triangle, plane, scene, camera):
     normal, D = plane
     distances = [normal.dot(vert) + D for vert in verts]
     
+    # Need this for triangle winding order
+    original_normal = (verts[1] - verts[0]).cross(verts[2] - verts[0])
+    original_normal.normalize()
+    
+    
     front = []
     back = []
+    on = []
     
     for i, d in enumerate(distances):
+        if abs(d) < epsilon:
+            on.append((verts[i], d))
+        
         if abs(d) < epsilon or d > 0:
             # Track original triangle with d
             front.append((verts[i], d))
         else:
             back.append((verts[i], d))
     
-    if len(front) == 2:
-        single = back[0]
-        far1 = front[0]
-        far2 = front[1]
-            
-    else: # len(back) == 2:
-        single = front[0]
-        far1 = back[0]
-        far2 = back[1]
-        
-    split1 = interpolate(far1[0], single[0], far1[1], single[1])
-    split2 = interpolate(far2[0], single[0], far2[1], single[1])
     
-    # LOL SO HILARIOUS!!!!!!!!!!!!!!!!!!!!!!!
-    original_normal = (verts[1] - verts[0]).cross(verts[2] - verts[0])
-    original_normal.normalize()
-    split_normal = (split2 - far1[0]).cross(split1 - split2)
-    split_normal.normalize()
-    if split_normal.dot(original_normal) >= 0:
-        triangles = [
-            create_triangle((far1[0], split2, split1), material, scene, camera),
-            create_triangle((far1[0], far2[0], split2), material, scene, camera),
-            create_triangle((split1, split2, single[0]), material, scene, camera)
-        ]
+    # Special case where we can split into 2 triangles instead of 3
+    if len(on) > 0:
+        f = front[0]
+        b = back[0]
+        o = on[0]
+        split = interpolate(f[0], b[0], f[1], b[1])
+        split_normal = (split - f[0]).cross(o[0] - f[0])
+        compare_normal = split_normal.dot(original_normal)
+        
+        if compare_normal >= 0:
+            fronts = [create_triangle((f[0], o[0], split), material, scene, camera)]
+            backs = [create_triangle((b[0], split, o[0]), material, scene, camera)]
+        else:
+            fronts = [create_triangle((b[0], split, o[0]), material, scene, camera)]
+            backs = [create_triangle((f[0], o[0], split), material, scene, camera)]
+    
+    # Most cases will be split into 3 triangles
     else:
-        triangles = [
-            create_triangle((split2, far1[0], split1), material, scene, camera),
-            create_triangle((far2[0], far1[0], split2), material, scene, camera),
-            create_triangle((split2, split1, single[0]), material, scene, camera)
-        ]
+        if len(front) == 2:
+            single = back[0]
+            far1 = front[0]
+            far2 = front[1]
+                
+        else: # len(back) == 2:
+            single = front[0]
+            far1 = back[0]
+            far2 = back[1]
+            
+        split1 = interpolate(far1[0], single[0], far1[1], single[1])
+        split2 = interpolate(far2[0], single[0], far2[1], single[1])
+        split_normal = (split2 - far1[0]).cross(split1 - far1[0])
+        split_normal.normalize()
+        compare_normal = split_normal.dot(original_normal)
+        
+        if compare_normal >= 0:
+            triangles = [
+                create_triangle((far1[0], split2, split1), material, scene, camera),
+                create_triangle((far1[0], far2[0], split2), material, scene, camera),
+                create_triangle((split1, split2, single[0]), material, scene, camera)
+            ]
+        else:
+            triangles = [
+                create_triangle((split2, far1[0], split1), material, scene, camera),
+                create_triangle((far2[0], far1[0], split2), material, scene, camera),
+                create_triangle((split2, split1, single[0]), material, scene, camera)
+            ]
 
-    if len(front) == 2:
-        fronts = [triangles[0], triangles[1]]
-        backs = [triangles[2]]
-    else:
-        fronts = [triangles[2]]
-        backs = [triangles[0], triangles[1]]
+        if len(front) == 2:
+            fronts = [triangles[0], triangles[1]]
+            backs = [triangles[2]]
+        else:
+            fronts = [triangles[2]]
+            backs = [triangles[0], triangles[1]]
     
     camera_location = camera.matrix_world.translation
     camera_d = normal.dot(camera_location) + D
@@ -181,6 +224,9 @@ def pick_pivot(triangles):
         for triangle in triangles:
             if classify_triangle(triangle, plane) == 'S':
                 splits += 1
+                
+        if splits == 0:
+            return pivot
         
         if splits < best_splits:
             best_splits = splits
@@ -203,7 +249,9 @@ def build_bsp(triangles, scene, camera):
     coplane = [pivot]
     front = []
     back = []
-
+    
+    didSplit = False
+    
     for triangle in triangles:            
         if triangle == pivot:
             continue
@@ -229,14 +277,21 @@ def build_bsp(triangles, scene, camera):
             continue
         
         fronts, backs = split_triangle(triangle, plane, scene, camera)
+        fronts = [front for front in fronts if not is_degenerate(front)]
+        backs = [back for back in backs if not is_degenerate(back)]
+        
         front += fronts
         back += backs
+        didSplit = True
+        
+    #if didSplit:
+        #triangle["material"] = "debug"
 
     node = BSPNode(coplane, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
     
     return node
 
-def is_point_in_triangle(p, triangle):
+def is_point_in_triangle(p, triangle, threshold):
     """
     Check if point `p` is inside the triangle defined by points `a`, `b`, and `c`
     using barycentric coordinates.
@@ -275,16 +330,16 @@ def is_point_in_triangle(p, triangle):
     v = (dot00 * dot12 - dot01 * dot02) / denom
 
     # Check if the point is inside the triangle
-    return (u >= 0) and (v >= 0) and (u + v <= 1)
+    return (u >= threshold) and (v >= threshold) and (u + v <= 1 - threshold)
 
 # Loop through all triangles to see if triangle lies in those areas
 def is_in_triangles(triangle, triangles):
     points = triangle["points"]
     
     for triangle in triangles:
-        if is_point_in_triangle(points[0], triangle) and \
-           is_point_in_triangle(points[1], triangle) and \
-           is_point_in_triangle(points[2], triangle):
+        if is_point_in_triangle(points[0], triangle, 0.05) and \
+           is_point_in_triangle(points[1], triangle, 0.05) and \
+           is_point_in_triangle(points[2], triangle, 0.05):
             return True            
 
     """
@@ -294,19 +349,19 @@ def is_in_triangles(triangle, triangles):
     hasThird = False
     
     for triangle in triangles:
-        if not hasFirst and is_point_in_triangle(points[0], triangle):
+        if not hasFirst and is_point_in_triangle(points[0], triangle, 0.25):
             hasFirst = True
             
-        if not hasSecond and is_point_in_triangle(points[1], triangle):
+        if not hasSecond and is_point_in_triangle(points[1], triangle, 0.25):
             hasSecond = True
             
-        if not hasThird and is_point_in_triangle(points[2], triangle):
+        if not hasThird and is_point_in_triangle(points[2], triangle, 0.25):
             hasThird = True
         
         if hasFirst and hasSecond and hasThird:
             return True
-    """ 
-        
+    """
+    
     return False
 
 def traverse_bsp(bsp, triangles):
@@ -317,7 +372,7 @@ def traverse_bsp(bsp, triangles):
     
    
     for triangle in bsp.triangles:
-        if not is_in_triangles(triangle, triangles):
+        # if not is_in_triangles(triangle, triangles):
             triangles.append(triangle)
         
     traverse_bsp(bsp.back, triangles)
@@ -403,6 +458,9 @@ while frame <= frame_end:
                     is_out_of_bounds = False
                     break
             if is_out_of_bounds:
+                continue
+
+            if is_degenerate(triangle):
                 continue
 
             triangles.append(triangle)
