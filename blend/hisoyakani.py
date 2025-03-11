@@ -134,7 +134,6 @@ def split_triangle(triangle, plane, scene, camera):
     original_normal = (verts[1] - verts[0]).cross(verts[2] - verts[0])
     original_normal.normalize()
     
-    
     front = []
     back = []
     on = []
@@ -160,11 +159,12 @@ def split_triangle(triangle, plane, scene, camera):
         compare_normal = split_normal.dot(original_normal)
         
         if compare_normal >= 0:
+            fronts = [create_triangle((split, b[0], o[0]), material, scene, camera)]
+            backs = [create_triangle((o[0], b[0], split), material, scene, camera)]
+        else:
             fronts = [create_triangle((f[0], o[0], split), material, scene, camera)]
             backs = [create_triangle((b[0], split, o[0]), material, scene, camera)]
-        else:
-            fronts = [create_triangle((b[0], split, o[0]), material, scene, camera)]
-            backs = [create_triangle((f[0], o[0], split), material, scene, camera)]
+
     
     # Most cases will be split into 3 triangles
     else:
@@ -207,7 +207,7 @@ def split_triangle(triangle, plane, scene, camera):
     camera_location = camera.matrix_world.translation
     camera_d = normal.dot(camera_location) + D
     
-    if abs(camera_d) < 0 or camera_d > 0:
+    if camera_d >= 0:
         return fronts, backs
     
     return backs, fronts
@@ -283,7 +283,7 @@ def build_bsp(triangles, scene, camera):
         front += fronts
         back += backs
         didSplit = True
-        
+
     #if didSplit:
         #triangle["material"] = "debug"
 
