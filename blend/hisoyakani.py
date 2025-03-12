@@ -26,7 +26,7 @@ depsgraph = bpy.context.evaluated_depsgraph_get()
 
 frame = 0
 frame_end = 5250
-frame_end = 1000
+frame_end = 5250
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
@@ -222,10 +222,18 @@ def pick_pivot(triangles):
         splits = 0
         plane = compute_plane(pivot)
         
+        skip = False
         for triangle in triangles:
             if classify_triangle(triangle, plane) == 'S':
                 splits += 1
                 
+            if splits > best_splits:
+                skip = True
+                break
+                
+        if skip:
+            continue
+        
         if splits == 0:
             return pivot
         
@@ -250,8 +258,6 @@ def build_bsp(triangles, scene, camera):
     coplane = [pivot]
     front = []
     back = []
-    
-    didSplit = False
     
     for triangle in triangles:            
         if triangle == pivot:
@@ -283,11 +289,6 @@ def build_bsp(triangles, scene, camera):
         
         front += fronts
         back += backs
-        didSplit = True
-
-    if didSplit:
-        # triangle["material"] = "debug"
-        pass
 
     node = BSPNode(coplane, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
     
@@ -344,25 +345,23 @@ def is_in_triangles(triangle, triangles):
            is_point_in_triangle(points[2], triangle, 0.05):
             return True            
 
-    """
     # This might be too lax because it's possible the middle parts of triangle aren't accounted for properly
     hasFirst = False
     hasSecond = False
     hasThird = False
     
     for triangle in triangles:
-        if not hasFirst and is_point_in_triangle(points[0], triangle, 0.25):
+        if not hasFirst and is_point_in_triangle(points[0], triangle, 0.15):
             hasFirst = True
             
-        if not hasSecond and is_point_in_triangle(points[1], triangle, 0.25):
+        if not hasSecond and is_point_in_triangle(points[1], triangle, 0.15):
             hasSecond = True
             
-        if not hasThird and is_point_in_triangle(points[2], triangle, 0.25):
+        if not hasThird and is_point_in_triangle(points[2], triangle, 0.15):
             hasThird = True
         
         if hasFirst and hasSecond and hasThird:
             return True
-    """
     
     return False
 
@@ -374,7 +373,7 @@ def traverse_bsp(bsp, triangles):
     
    
     for triangle in bsp.triangles:
-        # if not is_in_triangles(triangle, triangles):
+        if not is_in_triangles(triangle, triangles):
             triangles.append(triangle)
         
     traverse_bsp(bsp.back, triangles)
@@ -485,6 +484,8 @@ while frame <= frame_end:
             "material": triangle["material"],
         }
     for triangle in triangles]
+    
+    print(len(triangles))
 
     data.append({
         "frame": frame,

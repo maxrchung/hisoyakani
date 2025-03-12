@@ -15,9 +15,14 @@ export const Constants = {
   screenOffset: vec2.fromValues(-107, 0),
 };
 
-export const formatNumber = (number: number) => {
+export const formatNumber = (
+  number: number,
+  // 2 makes sense for rotation and scale, but position can probably get away
+  // with just 1
+  maximumFractionDigits: number = 2
+) => {
   const formatted = number.toLocaleString(undefined, {
-    maximumFractionDigits: 2,
+    maximumFractionDigits,
   });
 
   return formatted;

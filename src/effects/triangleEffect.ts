@@ -66,6 +66,13 @@ export default function trianglesPart(storyboard: Storyboard) {
           }
         }
 
+        // Scale's too small so no point to do anything with it lol?
+        // Any thing smaller than a cutoff we don't care about
+        const cutoff = 1 / Constants.triangleSize;
+        if (scale[0] < cutoff || scale[1] < cutoff) {
+          continue;
+        }
+
         const sprite = storyboard.sprite(file, position);
         sprite.rotate(Easing.Linear, start, end, rotation, rotation);
         sprite.scale(Easing.Linear, start, start, scale, scale);
@@ -158,7 +165,7 @@ const getPrevious = (
   previous: Sprite[]
 ) => {
   // This is not reliable because of layering. Going to have to see how to best address this...
-  return;
+  // return;
 
   // Check if we can optimize previous triangle instead of creating a new sprite
   for (const triangle of previous) {

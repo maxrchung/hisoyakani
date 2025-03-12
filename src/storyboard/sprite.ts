@@ -45,11 +45,9 @@ export default class Sprite {
   }
 
   write(builder: string[]) {
-    builder.push(
-      `4,0,0,${this.file},${formatNumber(this.position[0])},${formatNumber(
-        this.position[1]
-      )}`
-    );
+    const x = formatNumber(this.position[0], 1);
+    const y = formatNumber(this.position[1], 1);
+    builder.push(`4,0,0,${this.file},${x},${y}`);
 
     for (const command of this.commands) {
       builder.push(command.write());
