@@ -24,9 +24,9 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 0
+frame = 690
 frame_end = 5250
-frame_end = 1000
+frame_end = 690
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
@@ -124,9 +124,23 @@ def interpolate(v1, v2, d1, d2):
     t = d1 / (d1 - d2)
     return v1 + t * (v2 - v1)    
 
+# Fixes triangles point order
+def wind_triangles(triangles, original_normal):
+    for triangle in triangles:
+        verts = triangle["verts"]
+        split_normal = (verts[1] - verts[0]).cross(verts[2] - verts[0])
+        split_normal.normalize()
+        compare_normal = split_normal.dot(original_normal)
+        
+        if compare_normal < 0:
+            points = triangle["points"]
+            verts[1], verts[0] = verts[0], verts[1]
+            points[1], points[0] = points[0], points[1]
+                
 def split_triangle(triangle, plane, scene, camera):
     verts = triangle["verts"]
     material = triangle["material"]
+    
     normal, D = plane
     distances = [normal.dot(vert) + D for vert in verts]
     
@@ -148,23 +162,16 @@ def split_triangle(triangle, plane, scene, camera):
         else:
             back.append((verts[i], d))
     
-    
     # Special case where we can split into 2 triangles instead of 3
     if len(on) > 0:
         f = front[0]
         b = back[0]
         o = on[0]
-        split = interpolate(f[0], b[0], f[1], b[1])
-        split_normal = (split - f[0]).cross(o[0] - f[0])
-        compare_normal = split_normal.dot(original_normal)
         
-        if compare_normal >= 0:
-            fronts = [create_triangle((split, b[0], o[0]), material, scene, camera)]
-            backs = [create_triangle((o[0], b[0], split), material, scene, camera)]
-        else:
-            fronts = [create_triangle((f[0], o[0], split), material, scene, camera)]
-            backs = [create_triangle((b[0], split, o[0]), material, scene, camera)]
-
+        split = interpolate(f[0], b[0], f[1], b[1])
+        
+        fronts = [create_triangle([split, b[0], o[0]], material, scene, camera)]
+        backs = [create_triangle([o[0], b[0], split], material, scene, camera)]
     
     # Most cases will be split into 3 triangles
     else:
@@ -180,29 +187,22 @@ def split_triangle(triangle, plane, scene, camera):
             
         split1 = interpolate(far1[0], single[0], far1[1], single[1])
         split2 = interpolate(far2[0], single[0], far2[1], single[1])
-        split_normal = (split2 - far1[0]).cross(split1 - far1[0])
-        split_normal.normalize()
-        compare_normal = split_normal.dot(original_normal)
         
-        if compare_normal >= 0:
-            triangles = [
-                create_triangle((far1[0], split2, split1), material, scene, camera),
-                create_triangle((far1[0], far2[0], split2), material, scene, camera),
-                create_triangle((split1, split2, single[0]), material, scene, camera)
-            ]
-        else:
-            triangles = [
-                create_triangle((split2, far1[0], split1), material, scene, camera),
-                create_triangle((far2[0], far1[0], split2), material, scene, camera),
-                create_triangle((split2, split1, single[0]), material, scene, camera)
-            ]
-
+        triangles = [
+            create_triangle([far1[0], split2, split1], material, scene, camera),
+            create_triangle([far1[0], far2[0], split2], material, scene, camera),
+            create_triangle([split1, split2, single[0]], material, scene, camera)
+        ]
+        
         if len(front) == 2:
             fronts = [triangles[0], triangles[1]]
             backs = [triangles[2]]
         else:
             fronts = [triangles[2]]
             backs = [triangles[0], triangles[1]]
+    
+    wind_triangles(fronts, original_normal)
+    wind_triangles(backs, original_normal)
     
     camera_location = camera.matrix_world.translation
     camera_d = normal.dot(camera_location) + D
@@ -275,7 +275,7 @@ def build_bsp(triangles, scene, camera):
             else:
                 front.append(triangle)
             continue
-        
+
         fronts, backs = split_triangle(triangle, plane, scene, camera)
         fronts = [front for front in fronts if not is_degenerate(front)]
         backs = [back for back in backs if not is_degenerate(back)]
@@ -284,8 +284,9 @@ def build_bsp(triangles, scene, camera):
         back += backs
         didSplit = True
 
-    #if didSplit:
-        #triangle["material"] = "debug"
+    if didSplit:
+        # triangle["material"] = "debug"
+        pass
 
     node = BSPNode(coplane, build_bsp(front, scene, camera), build_bsp(back, scene, camera))
     
