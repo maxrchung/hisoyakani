@@ -156,7 +156,7 @@ def split_triangle(triangle, plane, scene, camera):
         if abs(d) < epsilon:
             on.append((verts[i], d))
         
-        if abs(d) < epsilon or d > 0:
+        elif d > 0:
             # Track original triangle with d
             front.append((verts[i], d))
         else:
