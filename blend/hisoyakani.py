@@ -24,9 +24,9 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 690
+frame = 0
 frame_end = 5250
-frame_end = 690
+frame_end = 1000
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
@@ -122,7 +122,8 @@ def classify_triangle(triangle, plane):
 def interpolate(v1, v2, d1, d2):
     """ Linearly interpolate between v1 and v2 at plane intersection """
     t = d1 / (d1 - d2)
-    return v1 + t * (v2 - v1)    
+    v3 = v1 + t * (v2 - v1)    
+    return v3
 
 # Fixes triangles point order
 def wind_triangles(triangles, original_normal):
@@ -170,7 +171,7 @@ def split_triangle(triangle, plane, scene, camera):
         
         split = interpolate(f[0], b[0], f[1], b[1])
         
-        fronts = [create_triangle([split, b[0], o[0]], material, scene, camera)]
+        fronts = [create_triangle([split, f[0], o[0]], material, scene, camera)]
         backs = [create_triangle([o[0], b[0], split], material, scene, camera)]
     
     # Most cases will be split into 3 triangles
