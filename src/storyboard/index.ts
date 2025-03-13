@@ -11,12 +11,27 @@ export default class Storyboard {
     return sprite;
   }
 
-  write(path: string) {
-    const builder = [
-      "[Events]",
-      "//Background and Video events",
-      "//Storyboard Layer 0 (Background)",
-    ];
+  write(path: string, variables: {} = {}) {
+    let hasVariable = false;
+    for (const _ in variables) {
+      hasVariable = true;
+      break;
+    }
+
+    const builder: string[] = [];
+
+    if (hasVariable) {
+      builder.push("[Variables]");
+      for (const key in variables) {
+        const variable = "$" + key;
+        const value = variables[key];
+        builder.push(`${variable}=${value}`);
+      }
+    }
+
+    builder.push("[Events]");
+    builder.push("//Background and Video events");
+    builder.push("//Storyboard Layer 0 (Background)");
 
     for (const sprite of this.sprites) {
       sprite.write(builder);

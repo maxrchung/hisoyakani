@@ -4,6 +4,7 @@ import FadeCommand from "./commands/fadeCommand";
 import RotateCommand from "./commands/rotateCommand";
 import { formatNumber } from "../common";
 import Easing from "./easing";
+import { replaceVariables } from "../variables";
 
 export default class Sprite {
   commands: (ScaleCommand | RotateCommand | FadeCommand)[] = [];
@@ -44,13 +45,17 @@ export default class Sprite {
     this.commands.push(new FadeCommand(easing, start, end, startFade, endFade));
   }
 
-  write(builder: string[]) {
+  write(builder: string[], variables: {} = {}) {
     const x = formatNumber(this.position[0], 1);
     const y = formatNumber(this.position[1], 1);
-    builder.push(`4,0,0,${this.file},${x},${y}`);
+    const line = `4,0,0,${this.file},${x},${y}`;
+    const replaced = replaceVariables(line);
+    builder.push(replaced);
 
     for (const command of this.commands) {
-      builder.push(command.write());
+      const line = command.write();
+      const replaced = replaceVariables(line);
+      builder.push(replaced);
     }
   }
 }
