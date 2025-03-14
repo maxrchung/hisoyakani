@@ -10,7 +10,6 @@ import RotateCommand from "../storyboard/commands/rotateCommand";
 import ScaleCommand from "../storyboard/commands/scaleCommand";
 import Sprite from "../storyboard/sprite";
 import data from "../../blend/hisoyakani.json";
-import Easing from "../storyboard/easing";
 import Material from "../material";
 
 export default function trianglesPart(storyboard: Storyboard) {
@@ -74,8 +73,8 @@ export default function trianglesPart(storyboard: Storyboard) {
         }
 
         const sprite = storyboard.sprite(file, position);
-        sprite.rotate(Easing.Linear, start, end, rotation, rotation);
-        sprite.scale(Easing.Linear, start, start, scale, scale);
+        sprite.rotate(start, end, rotation, rotation);
+        sprite.scale(start, start, scale, scale);
         // sprite.fade(
         //   Easing.Linear,
         //   start,

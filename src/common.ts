@@ -1,6 +1,5 @@
 import { vec2 } from "gl-matrix";
 import Storyboard from "./storyboard";
-import Easing from "./storyboard/easing";
 
 export const Constants = {
   // 1000 / 30 is 33.333333 repeating
@@ -56,11 +55,5 @@ export const createDebugPoint = (position: vec2, storyboard: Storyboard) => {
     "b",
     vec2.fromValues(position[0] - 5, position[1] - 5)
   );
-  sprite.scale(
-    Easing.Linear,
-    0,
-    999999,
-    vec2.fromValues(10, 10),
-    vec2.fromValues(10, 10)
-  );
+  sprite.scale(0, 999999, vec2.fromValues(10, 10), vec2.fromValues(10, 10));
 };
