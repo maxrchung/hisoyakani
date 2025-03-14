@@ -8,6 +8,8 @@ export const Variables = {
   h: " R,0,",
   i: " V,0,1",
   j: " V,0,",
+  k: " F,0,1",
+  l: " F,0,",
 };
 
 export const replaceVariables = (line: string) => {

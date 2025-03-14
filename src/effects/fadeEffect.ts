@@ -22,7 +22,7 @@ const startFade = (storyboard: Storyboard) => {
 
   const speed = Constants.frameDelta * Constants.frameRate;
   const iterations = Math.floor((end - start) / speed);
-  for (let i = 0; i < iterations; ++i) {
+  for (let i = 0; i <= iterations; ++i) {
     const time = start + i * speed;
     // Add some easing or some sheet
     const fade = 1 - (i / iterations) * (i / iterations);
@@ -43,7 +43,7 @@ const endFade = (storyboard: Storyboard) => {
 
   const speed = Constants.frameDelta * Constants.frameRate;
   const iterations = Math.floor((end - start) / speed);
-  for (let i = 0; i < iterations; ++i) {
+  for (let i = 0; i <= iterations; ++i) {
     const time = start + i * speed;
     const fade = (i / iterations) * (i / iterations);
     sprite.fade(time, time, fade, fade);
