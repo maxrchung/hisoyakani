@@ -24,14 +24,15 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 0
+frame = 4788
 frame_end = 5250
-frame_end = 5250
+frame_end = 4788
 
 # Must be multiple of 3 so actual time rounds to an integer
 frame_rate = 9
 
 epsilon = 1e-5
+big_epsilon = 1e-1
 
 def create_triangle(verts, material, scene, camera):
     points = []
@@ -94,7 +95,8 @@ def compare_vert(vert, plane):
     normal, D = plane
     d = normal.dot(vert) + D
     
-    if abs(d) < epsilon:
+    # Be more generous with this check so we can reduce splitting
+    if abs(d) < big_epsilon:
         return "O"
          
     if d > 0:
@@ -340,11 +342,12 @@ def is_in_triangles(triangle, triangles):
     points = triangle["points"]
     
     for triangle in triangles:
-        if is_point_in_triangle(points[0], triangle, 0.05) and \
-           is_point_in_triangle(points[1], triangle, 0.05) and \
-           is_point_in_triangle(points[2], triangle, 0.05):
+        if is_point_in_triangle(points[0], triangle, 0.1) and \
+           is_point_in_triangle(points[1], triangle, 0.1) and \
+           is_point_in_triangle(points[2], triangle, 0.1):
             return True            
 
+    """
     # This might be too lax because it's possible the middle parts of triangle aren't accounted for properly
     hasFirst = False
     hasSecond = False
@@ -362,6 +365,7 @@ def is_in_triangles(triangle, triangles):
         
         if hasFirst and hasSecond and hasThird:
             return True
+    """
     
     return False
 
@@ -369,8 +373,7 @@ def traverse_bsp(bsp, triangles):
     if bsp is None:
         return
     
-    traverse_bsp(bsp.front, triangles)
-    
+    traverse_bsp(bsp.front, triangles) 
    
     for triangle in bsp.triangles:
         if not is_in_triangles(triangle, triangles):
@@ -468,6 +471,8 @@ while frame <= frame_end:
         
         evaluated_object.to_mesh_clear()
         mesh.free()
+        
+    print(len(triangles))
     
     bsp = build_bsp(triangles, scene, camera)
     
