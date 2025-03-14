@@ -12,59 +12,57 @@ import Sprite from "../storyboard/sprite";
 import data from "../../blend/hisoyakani.json";
 import Material from "../material";
 
-export default function trianglesPart(storyboard: Storyboard) {
-  // We want to keep track of the previous triangles so if we find that 2
-  // triangles share the same transforms, we don't have to create a new sprite
-  // and can instead just increase the previous sprite's duration
-  let previous: Sprite[] = [];
+interface Triangle {
+  points: number[][];
+  material: string;
+  sprites?: Sprite[];
+}
 
+export default function trianglesPart(storyboard: Storyboard) {
   // For debugging
   const frames = data;
+
+  let previous: Triangle[] = [];
 
   for (const { frame, triangles } of data) {
     console.log(`Processing ${frame}`);
 
     const start = frame * Constants.frameRate;
     const end = start + Constants.frameDelta * Constants.frameRate;
-    const current: Sprite[] = [];
 
-    let counter = 0;
+    if (isRepeat(triangles, previous)) {
+      for (const { sprites } of previous) {
+        if (!sprites) {
+          continue;
+        }
 
-    for (const { points, material } of triangles) {
-      counter++;
+        for (const sprite of sprites) {
+          for (const command of sprite.commands) {
+            // Since we arbitrarily set the end in the rotate command, we only
+            // need to adjust that
+            if (command instanceof RotateCommand) {
+              command.end = end;
+              break;
+            }
+          }
+        }
+      }
+
+      continue;
+    }
+
+    const current: Triangle[] = triangles;
+
+    for (let i = 0; i < current.length; ++i) {
+      const { points, material } = current[i];
+      const sprites: Sprite[] = [];
+
       const file = Material[material.toString()] ?? 0;
 
       // Split arbitrary triangle into 2 right-sided triangles
       const triangles = splitTriangles(points);
 
       for (const { position, rotation, scale } of triangles) {
-        const previousTriangle = getPrevious(
-          file,
-          position,
-          rotation,
-          scale,
-          previous
-        );
-
-        if (previousTriangle) {
-          let foundPrevious = false;
-
-          for (const command of previousTriangle.commands) {
-            // Since we arbitrarily set the end in the rotate command, we only
-            // need to adjust that
-            if (command instanceof RotateCommand) {
-              command.end = end;
-              current.push(previousTriangle);
-              foundPrevious = true;
-              break;
-            }
-          }
-
-          if (foundPrevious) {
-            continue;
-          }
-        }
-
         // Scale's too small so no point to do anything with it lol?
         // Any thing smaller than a cutoff we don't care about
         const cutoff = 1 / Constants.triangleSize;
@@ -75,28 +73,34 @@ export default function trianglesPart(storyboard: Storyboard) {
         const sprite = storyboard.sprite(file, position);
         sprite.rotate(start, end, rotation, rotation);
         sprite.scale(start, start, scale, scale);
-        // sprite.fade(
-        //   Easing.Linear,
-        //   start,
-        //   start,
-        //   (1 / triangles.length) * counter,
-        //   (1 / triangles.length) * counter
-        // );
-        current.push(sprite);
+
+        sprites.push(sprite);
       }
 
-      // TODO: Testing
-      // for (const point of points) {
-      //   createPoint(
-      //     convertPosition(vec2.fromValues(point[0], point[1])),
-      //     storyboard
-      //   );
-      // }
+      current[i].sprites = sprites;
     }
 
     previous = current;
   }
 }
+
+const isRepeat = (triangles: Triangle[], previous: Triangle[]) => {
+  if (triangles.length !== previous.length) {
+    return false;
+  }
+
+  for (let i = 0; i < triangles.length; ++i) {
+    // I hate myself
+    if (triangles[i].points[0][0] !== previous[i].points[0][0]) return false;
+    if (triangles[i].points[0][1] !== previous[i].points[0][1]) return false;
+    if (triangles[i].points[1][0] !== previous[i].points[1][0]) return false;
+    if (triangles[i].points[1][1] !== previous[i].points[1][1]) return false;
+    if (triangles[i].points[2][0] !== previous[i].points[2][0]) return false;
+    if (triangles[i].points[2][1] !== previous[i].points[2][1]) return false;
+  }
+
+  return true;
+};
 
 // Splits a given triangle into 2 right-triangles
 const splitTriangles = (points: number[][]) => {
@@ -154,55 +158,6 @@ const splitTriangles = (points: number[][]) => {
     { position: positionA, rotation: rotationA, scale: scaleA },
     { position: positionB, rotation: rotationB, scale: scaleB },
   ];
-};
-
-const getPrevious = (
-  file: string,
-  position: vec2,
-  rotation: number,
-  scale: vec2,
-  previous: Sprite[]
-) => {
-  // This is not reliable because of layering. Going to have to see how to best address this...
-  // return;
-
-  // Check if we can optimize previous triangle instead of creating a new sprite
-  for (const triangle of previous) {
-    if (triangle.file !== file) {
-      continue;
-    }
-
-    if (!vec2.equals(triangle.position, position)) {
-      continue;
-    }
-
-    let isEqual = true;
-
-    for (const command of triangle.commands) {
-      if (command instanceof RotateCommand) {
-        if (!isNumberEqual(command.startRotate, rotation)) {
-          isEqual = false;
-          break;
-        }
-      } else if (command instanceof ScaleCommand) {
-        if (!vec2.equals(command.startScale, scale)) {
-          isEqual = false;
-          break;
-        }
-      }
-    }
-
-    if (!isEqual) {
-      continue;
-    }
-
-    // If we get to here that means that we can reuse the previous triangle
-    // since there are no transforms.
-    return triangle;
-  }
-
-  // If there is no previous then we will naturally return undefined
-  return;
 };
 
 // In our projection scenario we need to make sure several properties are met
