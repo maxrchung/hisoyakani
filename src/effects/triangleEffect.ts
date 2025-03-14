@@ -30,7 +30,7 @@ export default function trianglesPart(storyboard: Storyboard) {
     const start = frame * Constants.frameRate;
     const end = start + Constants.frameDelta * Constants.frameRate;
 
-    if (isRepeat(triangles, previous)) {
+    if (isRepeatFrame(triangles, previous)) {
       for (const { sprites } of previous) {
         if (!sprites) {
           continue;
@@ -84,7 +84,7 @@ export default function trianglesPart(storyboard: Storyboard) {
   }
 }
 
-const isRepeat = (triangles: Triangle[], previous: Triangle[]) => {
+const isRepeatFrame = (triangles: Triangle[], previous: Triangle[]) => {
   if (triangles.length !== previous.length) {
     return false;
   }
