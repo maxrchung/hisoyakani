@@ -11,10 +11,10 @@ export default function backgroundEffect(storyboard: Storyboard) {
   );
   background.fade(0, 0, 0, 0);
 
-  // const sprite = storyboard.sprite(
-  //   "b",
-  //   vec2.fromValues(Constants.screenOffset[0], Constants.screenOffset[1])
-  // );
-  // const scale = vec2.fromValues(856, 482);
-  // sprite.scale(0, 999999, scale, scale);
+  const sprite = storyboard.sprite(
+    "b",
+    vec2.fromValues(Constants.screenOffset[0], Constants.screenOffset[1])
+  );
+  const scale = vec2.fromValues(856, 482);
+  sprite.scale(0, 999999, scale, scale);
 }
