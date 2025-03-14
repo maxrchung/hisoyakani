@@ -91,12 +91,18 @@ const isRepeat = (triangles: Triangle[], previous: Triangle[]) => {
 
   for (let i = 0; i < triangles.length; ++i) {
     // I hate myself
-    if (triangles[i].points[0][0] !== previous[i].points[0][0]) return false;
-    if (triangles[i].points[0][1] !== previous[i].points[0][1]) return false;
-    if (triangles[i].points[1][0] !== previous[i].points[1][0]) return false;
-    if (triangles[i].points[1][1] !== previous[i].points[1][1]) return false;
-    if (triangles[i].points[2][0] !== previous[i].points[2][0]) return false;
-    if (triangles[i].points[2][1] !== previous[i].points[2][1]) return false;
+    if (!isNumberEqual(triangles[i].points[0][0], previous[i].points[0][0]))
+      return false;
+    if (!isNumberEqual(triangles[i].points[0][1], previous[i].points[0][1]))
+      return false;
+    if (!isNumberEqual(triangles[i].points[1][0], previous[i].points[1][0]))
+      return false;
+    if (!isNumberEqual(triangles[i].points[1][1], previous[i].points[1][1]))
+      return false;
+    if (!isNumberEqual(triangles[i].points[2][0], previous[i].points[2][0]))
+      return false;
+    if (!isNumberEqual(triangles[i].points[2][1], previous[i].points[2][1]))
+      return false;
   }
 
   return true;
