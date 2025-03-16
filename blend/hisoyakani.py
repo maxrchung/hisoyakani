@@ -6,7 +6,11 @@ import pprint
 import os
 from functools import cmp_to_key
 import pprint
+import time
+import math
+from mathutils import *
 
+start = time.time()
 
 print()
 print("start")
@@ -24,15 +28,25 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 4788
+frame = 4239
 frame_end = 5250
-frame_end = 4788
+frame_end = 4239
 
 # Must be multiple of 3 so actual time rounds to an integer
+# Also have to match this with the storyboard side
 frame_rate = 9
 
 epsilon = 1e-5
-big_epsilon = 1e-1
+
+def get_points_area(triangle):
+    points = [Vector(point) for point in triangle["points"]]
+    v1, v2, v3 = points
+    
+    edge1 = v2 - v1
+    edge2 = v3 - v1
+    area = edge1.cross(edge2).length / 2  # Area of triangle
+    
+    return area
 
 def create_triangle(verts, material, scene, camera):
     points = []
@@ -59,12 +73,11 @@ def is_degenerate(triangle):
     # Check if any two points are too close
     if (v1 - v2).length < epsilon or (v2 - v3).length < epsilon or (v3 - v1).length < epsilon:
         return True
-
-    # Compute triangle area using cross product
+    
     edge1 = v2 - v1
     edge2 = v3 - v1
     area = edge1.cross(edge2).length / 2  # Area of triangle
-
+    
     return area < epsilon
 
 class BSPNode:
@@ -96,7 +109,7 @@ def compare_vert(vert, plane):
     d = normal.dot(vert) + D
     
     # Be more generous with this check so we can reduce splitting
-    if abs(d) < big_epsilon:
+    if abs(d) < 1e-1:
         return "O"
          
     if d > 0:
@@ -120,6 +133,18 @@ def classify_triangle(triangle, plane):
         return "B" # back
     
     return "S" # spanning
+
+def force_classify(triangle, plane):
+    normal, D = plane
+    d = 0
+    
+    for vert in triangle["verts"]:
+        d += normal.dot(vert) + D
+        
+    if d >= 0:
+        return "F"
+    
+    return "B"
 
 def interpolate(v1, v2, d1, d2):
     """ Linearly interpolate between v1 and v2 at plane intersection """
@@ -251,7 +276,8 @@ def build_bsp(triangles, scene, camera):
         return None
     
     pivot = pick_pivot(triangles)
-    #pivot = triangles[len(triangles) // 2]
+    # pivot = triangles[len(triangles) // 2]
+    
     plane = compute_plane(pivot)
     normal, D = plane
     camera_location = camera.matrix_world.translation
@@ -284,6 +310,21 @@ def build_bsp(triangles, scene, camera):
             else:
                 front.append(triangle)
             continue
+        
+        # If the area is small enough, don't bother splitting
+        if get_points_area(triangle) < 2e-2:
+            if force_classify(triangle, plane) == "F":
+                if camera_d >= 0:
+                    front.append(triangle)
+                else:
+                    back.append(triangle)
+            else: # B
+                if camera_d >= 0:
+                    back.append(triangle)
+                else:
+                    front.append(triangle)
+                    
+            continue
 
         fronts, backs = split_triangle(triangle, plane, scene, camera)
         fronts = [front for front in fronts if not is_degenerate(front)]
@@ -296,7 +337,7 @@ def build_bsp(triangles, scene, camera):
     
     return node
 
-def is_point_in_triangle(p, triangle, threshold):
+def is_point_in_triangle(pp, triangle, threshold):
     """
     Check if point `p` is inside the triangle defined by points `a`, `b`, and `c`
     using barycentric coordinates.
@@ -310,9 +351,10 @@ def is_point_in_triangle(p, triangle, threshold):
     """
     
     points = triangle["points"]
-    a = points[0]
-    b = points[1]
-    c = points[2]
+    a = points[0].xy
+    b = points[1].xy
+    c = points[2].xy
+    p = pp.xy
 
     # Compute vectors
     v0 = c - a
@@ -328,8 +370,6 @@ def is_point_in_triangle(p, triangle, threshold):
 
     # Compute barycentric coordinates
     denom = dot00 * dot11 - dot01 * dot01
-    if denom == 0:
-        return False  # Degenerate triangle (shouldn't happen in valid geometry)
 
     u = (dot11 * dot02 - dot01 * dot12) / denom
     v = (dot00 * dot12 - dot01 * dot02) / denom
@@ -340,32 +380,30 @@ def is_point_in_triangle(p, triangle, threshold):
 # Loop through all triangles to see if triangle lies in those areas
 def is_in_triangles(triangle, triangles):
     points = triangle["points"]
-    
-    for triangle in triangles:
-        if is_point_in_triangle(points[0], triangle, 0.1) and \
-           is_point_in_triangle(points[1], triangle, 0.1) and \
-           is_point_in_triangle(points[2], triangle, 0.1):
-            return True            
 
-    """
+    for compare in triangles:
+        if is_point_in_triangle(points[0], compare, 0.0) and \
+           is_point_in_triangle(points[1], compare, 0.0) and \
+           is_point_in_triangle(points[2], compare, 0.0):
+            return True
+    
     # This might be too lax because it's possible the middle parts of triangle aren't accounted for properly
     hasFirst = False
     hasSecond = False
     hasThird = False
     
-    for triangle in triangles:
-        if not hasFirst and is_point_in_triangle(points[0], triangle, 0.15):
+    for compare in triangles:
+        if not hasFirst and is_point_in_triangle(points[0], compare, 0.04):
             hasFirst = True
             
-        if not hasSecond and is_point_in_triangle(points[1], triangle, 0.15):
+        if not hasSecond and is_point_in_triangle(points[1], compare, 0.04):
             hasSecond = True
             
-        if not hasThird and is_point_in_triangle(points[2], triangle, 0.15):
+        if not hasThird and is_point_in_triangle(points[2], compare, 0.04):
             hasThird = True
         
         if hasFirst and hasSecond and hasThird:
             return True
-    """
     
     return False
 
@@ -373,7 +411,7 @@ def traverse_bsp(bsp, triangles):
     if bsp is None:
         return
     
-    traverse_bsp(bsp.front, triangles) 
+    traverse_bsp(bsp.front, triangles)
    
     for triangle in bsp.triangles:
         if not is_in_triangles(triangle, triangles):
@@ -382,7 +420,7 @@ def traverse_bsp(bsp, triangles):
     traverse_bsp(bsp.back, triangles)
 
 while frame <= frame_end:
-    print("Processing ", frame)
+    print("Processing", frame)
     
     """
     {
@@ -507,3 +545,8 @@ with open(path, "w") as file:
 
 print("end")
 print()
+
+end = time.time()
+
+elapsed = (end - start) / 60
+print("Elapsed:", math.floor(elapsed * 100) / 100, "minutes")
