@@ -3,7 +3,6 @@ import ScaleCommand from "./commands/scaleCommand";
 import FadeCommand from "./commands/fadeCommand";
 import RotateCommand from "./commands/rotateCommand";
 import { formatNumber } from "../common";
-import { replaceVariables } from "../variables";
 
 export default class Sprite {
   commands: (ScaleCommand | RotateCommand | FadeCommand)[] = [];
@@ -23,15 +22,26 @@ export default class Sprite {
   }
 
   write(builder: string[], variables: {}) {
+    function replaceVariables(line: string) {
+      let replaced = line;
+      for (const key in variables) {
+        const variable = key;
+        const value = variables[key];
+        replaced = replaced.replace(value, variable);
+      }
+
+      return replaced;
+    }
+
     const x = formatNumber(this.position[0], 0);
     const y = formatNumber(this.position[1], 0);
     const line = `4,0,0,${this.file},${x},${y}`;
-    const replaced = replaceVariables(line, variables);
+    const replaced = replaceVariables(line);
     builder.push(replaced);
 
     for (const command of this.commands) {
       const line = command.write();
-      const replaced = replaceVariables(line, variables);
+      const replaced = replaceVariables(line);
       builder.push(replaced);
     }
   }

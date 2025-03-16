@@ -1143,7 +1143,11 @@ import backgroundEffect from "./effects/backgroundEffect";
 import triangleEffect from "./effects/triangleEffect";
 import smokeEffect from "./effects/smokeEffect";
 import fadeEffect from "./effects/fadeEffect";
-import { Variables } from "./variables";
+import { generateVariables } from "./variables";
+import data from "../blend/hisoyakani.json";
+import { formatNumber } from "./common";
+
+const start = new Date();
 
 const storyboard = new Storyboard();
 
@@ -1152,6 +1156,21 @@ triangleEffect(storyboard);
 smokeEffect(storyboard);
 fadeEffect(storyboard);
 
+const variables = generateVariables(storyboard);
+
 const path =
   "C:\\Users\\Max\\AppData\\Local\\osu!\\Songs\\beatmap-638752487828044626-h\\swag - swag (S2VX).osb";
-storyboard.write(path, Variables);
+storyboard.write(path, variables);
+
+console.log("Frames:", data.length);
+console.log("Sprites:", storyboard.sprites.length);
+
+let commands = 0;
+storyboard.sprites.forEach((sprite) =>
+  sprite.commands.forEach(() => commands++)
+);
+console.log("Commands:", commands);
+
+const end = new Date();
+const elapsed = (end.getTime() - start.getTime()) / 60000;
+console.log("Elapsed:", formatNumber(elapsed), "minutes");

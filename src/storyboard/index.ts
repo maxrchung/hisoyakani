@@ -23,7 +23,7 @@ export default class Storyboard {
     if (hasVariable) {
       builder.push("[Variables]");
       for (const key in variables) {
-        const variable = "$" + key;
+        const variable = key;
         const value = variables[key];
         builder.push(`${variable}=${value}`);
       }
@@ -33,7 +33,10 @@ export default class Storyboard {
     builder.push("//Background and Video events");
     builder.push("//Storyboard Layer 0 (Background)");
 
-    for (const sprite of this.sprites) {
+    for (let i = 0; i < this.sprites.length; ++i) {
+      console.log("Writing", i);
+
+      const sprite = this.sprites[i];
       sprite.write(builder, variables);
     }
 

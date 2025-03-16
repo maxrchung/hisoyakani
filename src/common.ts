@@ -20,9 +20,12 @@ export const formatNumber = (
   // with just 1 or 0
   maximumFractionDigits: number = 2
 ) => {
-  const formatted = number.toLocaleString(undefined, {
-    maximumFractionDigits,
-  });
+  const formatted = number
+    .toLocaleString(undefined, {
+      maximumFractionDigits,
+    })
+    // E.g. turn 0.123 -> .123
+    .replace("0.", ".");
 
   return formatted;
 };
