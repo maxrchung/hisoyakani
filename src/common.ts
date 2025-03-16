@@ -17,7 +17,7 @@ export const Constants = {
 export const formatNumber = (
   number: number,
   // 2 makes sense for rotation and scale, but position can probably get away
-  // with just 1
+  // with just 1 or 0
   maximumFractionDigits: number = 2
 ) => {
   const formatted = number.toLocaleString(undefined, {

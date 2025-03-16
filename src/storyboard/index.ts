@@ -34,7 +34,7 @@ export default class Storyboard {
     builder.push("//Storyboard Layer 0 (Background)");
 
     for (const sprite of this.sprites) {
-      sprite.write(builder);
+      sprite.write(builder, variables);
     }
 
     builder.push("//Storyboard Layer 1 (Fail)");

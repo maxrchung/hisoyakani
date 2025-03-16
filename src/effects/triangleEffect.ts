@@ -7,7 +7,6 @@ import {
 } from "../common";
 import Storyboard from "../storyboard";
 import RotateCommand from "../storyboard/commands/rotateCommand";
-import ScaleCommand from "../storyboard/commands/scaleCommand";
 import Sprite from "../storyboard/sprite";
 import data from "../../blend/hisoyakani.json";
 import Material from "../material";

@@ -12,11 +12,11 @@ export const Variables = {
   l: " F,0,",
 };
 
-export const replaceVariables = (line: string) => {
+export const replaceVariables = (line: string, variables: {}) => {
   let replaced = line;
-  for (const key in Variables) {
+  for (const key in variables) {
     const variable = "$" + key;
-    const value = Variables[key];
+    const value = variables[key];
     replaced = replaced.replace(value, variable);
   }
 

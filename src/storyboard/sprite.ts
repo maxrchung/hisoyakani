@@ -22,16 +22,16 @@ export default class Sprite {
     this.commands.push(new FadeCommand(start, end, startFade, endFade));
   }
 
-  write(builder: string[], variables: {} = {}) {
-    const x = formatNumber(this.position[0], 1);
-    const y = formatNumber(this.position[1], 1);
+  write(builder: string[], variables: {}) {
+    const x = formatNumber(this.position[0], 0);
+    const y = formatNumber(this.position[1], 0);
     const line = `4,0,0,${this.file},${x},${y}`;
-    const replaced = replaceVariables(line);
+    const replaced = replaceVariables(line, variables);
     builder.push(replaced);
 
     for (const command of this.commands) {
       const line = command.write();
-      const replaced = replaceVariables(line);
+      const replaced = replaceVariables(line, variables);
       builder.push(replaced);
     }
   }
