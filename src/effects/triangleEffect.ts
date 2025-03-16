@@ -57,7 +57,8 @@ export default function trianglesPart(storyboard: Storyboard) {
       const { points, material } = current[i];
       const sprites: Sprite[] = [];
 
-      const file = Material[material.toString()] ?? 0;
+      let file = Material[material.toString()] ?? 0;
+      // file = "5";
 
       // Split arbitrary triangle into 2 right-sided triangles
       const triangles = splitTriangles(points);
@@ -81,6 +82,8 @@ export default function trianglesPart(storyboard: Storyboard) {
     }
 
     previous = current;
+
+    console.log(current.length);
   }
 }
 
