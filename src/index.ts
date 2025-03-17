@@ -1141,7 +1141,6 @@
 import Storyboard from "./storyboard";
 import backgroundEffect from "./effects/backgroundEffect";
 import triangleEffect from "./effects/triangleEffect";
-import smokeEffect from "./effects/smokeEffect";
 import fadeEffect from "./effects/fadeEffect";
 import { generateVariables } from "./variables";
 import data from "../blend/hisoyakani.json";
@@ -1153,8 +1152,7 @@ const storyboard = new Storyboard();
 
 backgroundEffect(storyboard);
 triangleEffect(storyboard);
-smokeEffect(storyboard);
-fadeEffect(storyboard);
+// fadeEffect(storyboard);
 
 const variables = generateVariables(storyboard);
 
