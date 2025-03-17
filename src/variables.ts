@@ -44,7 +44,8 @@ export const generateVariables = (storyboard: Storyboard) => {
       codePoint === 36 || // $
       codePoint === 38 || // &
       codePoint === 39 || // '
-      codePoint === 61 // =
+      codePoint === 61 || // =
+      codePoint === 96 // `
     ) {
       codePoint++;
     }
