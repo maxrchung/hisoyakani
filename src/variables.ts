@@ -38,11 +38,13 @@ export const generateVariables = (storyboard: Storyboard) => {
     codePoint++;
 
     // Skip some characters... probably messes up stuff?
-    if (
+    while (
       codePoint === 10 || // \n
       codePoint === 13 || // \r
       codePoint === 36 || // $
-      codePoint === 38 // &
+      codePoint === 38 || // &
+      codePoint === 39 || // '
+      codePoint === 61 // =
     ) {
       codePoint++;
     }
