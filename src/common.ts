@@ -25,8 +25,12 @@ export const formatNumber = (
     .toLocaleString(undefined, {
       maximumFractionDigits,
     })
-    // E.g. turn 0.123 -> .123
     .replace("0.", ".");
+
+  if (formatted.startsWith("0.")) {
+    const replaced = formatted.substring(1);
+    return replaced;
+  }
 
   return formatted;
 };
