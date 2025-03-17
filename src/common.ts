@@ -5,7 +5,8 @@ export const Constants = {
   // 1000 / 30 is 33.333333 repeating
   frameRate: 1000 / 30,
   // Because of above, all frame rates need to be in multiples of 3
-  frameDelta: 9,
+  // Make sure this matches Blender script side
+  frameDelta: 6,
   unitX: vec2.fromValues(1, 0),
   unitY: vec2.fromValues(0, 1),
   triangleSize: 128,
