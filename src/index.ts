@@ -1152,7 +1152,7 @@ const storyboard = new Storyboard();
 
 backgroundEffect(storyboard);
 triangleEffect(storyboard);
-// fadeEffect(storyboard);
+fadeEffect(storyboard);
 
 const variables = generateVariables(storyboard);
 

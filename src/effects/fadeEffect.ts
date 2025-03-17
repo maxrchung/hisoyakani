@@ -16,7 +16,7 @@ const startFade = (storyboard: Storyboard) => {
     vec2.fromValues(Constants.screenOffset[0], Constants.screenOffset[1])
   );
   const start = 0;
-  const end = 7566;
+  const end = 6600;
 
   sprite.scale(start, start, scale, scale);
 
