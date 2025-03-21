@@ -35,7 +35,7 @@ Blender Python and TypeScript utilities.
 - 1,678,303 sprite commands
 - 22.7 MB OSB file
 - 2,518,779 lines in OSB file
-- In total I've been working on this project for about 8 months
+- This project's taken about 8 months in total
 
 ## Thanks
 
