@@ -1,6 +1,9 @@
 # Really large data file that Blender scripting generates
 hisoyakani.json
 
+# Don't think we need backup files in git
+*.blend1
+
 # Logs
 logs
 *.log
