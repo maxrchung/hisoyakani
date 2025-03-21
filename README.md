@@ -5,6 +5,8 @@
 osu! storyboard project that converts Blender 3D animation to osu! format using
 Blender Python and TypeScript utilities.
 
+## Download
+
 ## Video
 
 ## Screenshots
@@ -16,8 +18,6 @@ Blender Python and TypeScript utilities.
 ![together](https://github.com/user-attachments/assets/82c1af5e-8fe1-44c8-a45f-fca7fd594885)
 
 ![a](https://github.com/user-attachments/assets/b682e2b1-ffdb-448c-8a03-7756eb85f1c3)
-
-## Download
 
 ## Details
 
