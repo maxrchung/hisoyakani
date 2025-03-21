@@ -9,6 +9,14 @@ Blender Python and TypeScript utilities.
 
 ## Screenshots
 
+![cup](https://github.com/user-attachments/assets/3359d48e-7784-4071-914f-a4cb8c3ea752)
+
+![read](https://github.com/user-attachments/assets/7cae06b6-0b2e-4496-a269-2a99b93064d4)
+
+![together](https://github.com/user-attachments/assets/82c1af5e-8fe1-44c8-a45f-fca7fd594885)
+
+![a](https://github.com/user-attachments/assets/b682e2b1-ffdb-448c-8a03-7756eb85f1c3)
+
 ## Download
 
 ## Details
