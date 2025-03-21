@@ -28,9 +28,9 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 0
+frame = 850
 frame_end = 5250
-frame_end = 5250
+frame_end = 950
 
 # Must be multiple of 3 so actual time rounds to an integer
 # Also have to match this with the storyboard side
