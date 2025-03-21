@@ -57,6 +57,7 @@ export const generateVariables = (storyboard: Storyboard) => {
   addVariable("4,0,0,2,");
   addVariable("4,0,0,3,");
   addVariable("4,0,0,4,");
+  addVariable("4,0,0,5,");
 
   for (const {
     command: { start, end },
