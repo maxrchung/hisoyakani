@@ -21,23 +21,22 @@ using Blender Python and TypeScript utilities.
 
 ## Details
 
-- My first time doing 3D modeling and animation
-- Modeled and animated everything from scratch in Blender
+- Modeled and animated from scratch in Blender
 - Used [binary space partitioning](https://en.m.wikipedia.org/wiki/Binary_space_partitioning) to determine triangle order
 - Implemented back-face, frustum, and occlusion culling
-- 80 minutes for me to run Blender to JSON data script
-- 118 MB JSON data
-- 15 minutes for me to run JSON data to storyboard script
-- 27.4 MB OSB file
-- 3,039,795 lines in OSB file
+- 75 minutes to run Blender to JSON script
+- 118 MB JSON
+- 15 minutes to run JSON to storyboard script
+- 27.4 MB OSB
+- 3,045,000 lines in OSB
 - 1,357 storyboard variables 🤡
-- 57.5 MB OSB file without storyboard variables
-- 2 minutes for me to load map in osu!
+- 57.6 MB OSB file without storyboard variables
+- 2 minutes to load map in osu!
 - 5 FPS animation
 - 876 frames
-- 1,012,782 sprites
-- 2,025,647 sprite commands
-- In total, I worked on this project for about 8 months
+- 1,014,517 sprites
+- 2,029,117 sprite commands
+- In total project has taken about 8 months to complete
 
 ## Thanks
 
