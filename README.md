@@ -31,7 +31,7 @@ using Blender Python and TypeScript utilities.
 - 3,045,000 lines in OSB
 - 1,357 storyboard variables 🤡
 - 57.6 MB OSB file without storyboard variables
-- 2 minutes to load map in osu!
+- 2.5 minutes to load map in osu!
 - 5 FPS animation
 - 876 frames
 - 1,014,517 sprites
