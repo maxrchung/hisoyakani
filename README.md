@@ -5,9 +5,13 @@
 osu! storyboard project that converts Blender 3D animation to storyboard format
 using Blender Python and TypeScript utilities.
 
-## Download
+## Beatmap
+
+TBA
 
 ## Video
+
+https://www.youtube.com/watch?v=9X4GQRoEhdc
 
 ## Screenshots
 
