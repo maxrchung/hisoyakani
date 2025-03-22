@@ -28,9 +28,9 @@ camera = scene.camera
 
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-frame = 2330
+frame = 0
 frame_end = 5250
-frame_end = 2900
+frame_end = 5250
 
 # Must be multiple of 3 so actual time rounds to an integer
 # Also have to match this with the storyboard side
@@ -396,13 +396,13 @@ def is_in_triangles(triangle, triangles):
     hasThird = False
     
     for compare in triangles:
-        if not hasFirst and is_point_in_triangle(points[0], compare, 0.14):
+        if not hasFirst and is_point_in_triangle(points[0], compare, 0.15):
             hasFirst = True
             
-        if not hasSecond and is_point_in_triangle(points[1], compare, 0.14):
+        if not hasSecond and is_point_in_triangle(points[1], compare, 0.15):
             hasSecond = True
             
-        if not hasThird and is_point_in_triangle(points[2], compare, 0.14):
+        if not hasThird and is_point_in_triangle(points[2], compare, 0.15):
             hasThird = True
         
         if hasFirst and hasSecond and hasThird:

@@ -2,8 +2,8 @@
 
 "Hisoyakani" by Lamp
 
-osu! storyboard project that converts Blender 3D animation to osu! format using
-Blender Python and TypeScript utilities.
+osu! storyboard project that converts Blender 3D animation to storyboard format
+using Blender Python and TypeScript utilities.
 
 ## Download
 
@@ -21,21 +21,23 @@ Blender Python and TypeScript utilities.
 
 ## Details
 
-- First time 3D modeling and animating
-- Modeled and animated everything from scratch
+- My first time doing 3D modeling and animation
+- Modeled and animated everything from scratch in Blender
 - Used [binary space partitioning](https://en.m.wikipedia.org/wiki/Binary_space_partitioning) to determine triangle order
 - Implemented back-face, frustum, and occlusion culling
-- 1,357 osu! storyboard variables 🤡
-- Blender to JSON script takes me 75 minutes to run
-- JSON to osu! storyboard script takes me 15 minutes to run
-- Loading the map in osu! takes me 2 minutes
-- Animation runs at 5 FPS
-- 876 frames processed
-- 839,110 sprites
-- 1,678,303 sprite commands
-- 22.7 MB OSB file
-- 2,518,779 lines in OSB file
-- In total, this project's taken about 8 months to make
+- 80 minutes for me to run Blender to JSON data script
+- 118 MB JSON data
+- 15 minutes for me to run JSON data to storyboard script
+- 27.4 MB OSB file
+- 3,039,795 lines in OSB file
+- 1,357 storyboard variables 🤡
+- 57.5 MB OSB file without storyboard variables
+- 2 minutes for me to load map in osu!
+- 5 FPS animation
+- 876 frames
+- 1,012,782 sprites
+- 2,025,647 sprite commands
+- In total, I worked on this project for about 8 months
 
 ## Thanks
 
