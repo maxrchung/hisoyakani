@@ -7,7 +7,7 @@ using Blender Python and TypeScript utilities.
 
 ## Beatmap
 
-TBA
+https://osu.ppy.sh/beatmapsets/2344967
 
 ## Video
 
@@ -40,7 +40,7 @@ https://www.youtube.com/watch?v=9X4GQRoEhdc
 - 876 frames
 - 1,014,517 sprites
 - 2,029,117 sprite commands
-- In total project has taken about 8 months to complete
+- In total, this project's taken about 8 months to complete
 
 ## Thanks
 
