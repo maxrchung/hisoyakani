@@ -8,8 +8,10 @@ import {
 import Storyboard from "../storyboard";
 import RotateCommand from "../storyboard/commands/rotateCommand";
 import Sprite from "../storyboard/sprite";
-import data from "../../blend/hisoyakani.json";
 import Material from "../material";
+import fs from "fs";
+import { parser } from "stream-json";
+import { streamArray } from "stream-json/streamers/StreamArray";
 
 interface Triangle {
   points: number[][];
@@ -17,7 +19,34 @@ interface Triangle {
   sprites?: Sprite[];
 }
 
-export default function trianglesPart(storyboard: Storyboard) {
+async function readJson(filePath: string): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const result: any[] = [];
+    const stream = fs
+      .createReadStream(filePath, { encoding: "utf8" })
+      .pipe(parser())
+      .pipe(streamArray());
+
+    stream.on("data", ({ value }) => {
+      console.log(value.frame);
+      result.push(value); // Store objects in the array
+    });
+
+    stream.on("end", () => {
+      console.log("Finished reading JSON");
+      resolve(result); // Return the full array
+    });
+
+    stream.on("error", (err) => {
+      console.error("Error:", err);
+      reject(err);
+    });
+  });
+}
+
+export default async function trianglesPart(storyboard: Storyboard) {
+  const data = await readJson("blend/hisoyakani.json");
+
   // For debugging
   const frames = data;
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "tsx src/index.ts"
+    "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=16000\" tsx src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,8 @@
     "tsx": "^4.19.2"
   },
   "dependencies": {
-    "gl-matrix": "^3.4.3"
+    "cross-env": "^7.0.3",
+    "gl-matrix": "^3.4.3",
+    "stream-json": "^1.9.1"
   }
 }

@@ -1143,32 +1143,35 @@ import backgroundEffect from "./effects/backgroundEffect";
 import triangleEffect from "./effects/triangleEffect";
 import fadeEffect from "./effects/fadeEffect";
 import { generateVariables } from "./variables";
-import data from "../blend/hisoyakani.json";
 import { formatNumber } from "./common";
 
-const start = new Date();
+const main = async () => {
+  const start = new Date();
 
-const storyboard = new Storyboard();
+  const storyboard = new Storyboard();
 
-backgroundEffect(storyboard);
-triangleEffect(storyboard);
-fadeEffect(storyboard);
+  backgroundEffect(storyboard);
+  await triangleEffect(storyboard);
+  fadeEffect(storyboard);
 
-const variables = generateVariables(storyboard);
+  // const variables = generateVariables(storyboard);
 
-const path =
-  "C:\\Users\\Max\\AppData\\Local\\osu!\\Songs\\beatmap-638752487828044626-h\\swag - swag (S2VX).osb";
-storyboard.write(path, variables);
+  const path =
+    "C:\\Users\\Max\\AppData\\Local\\osu!\\Songs\\beatmap-638752487828044626-h\\swag - swag (S2VX).osb";
+  storyboard.write(path, {});
 
-console.log("Frames:", data.length);
-console.log("Sprites:", storyboard.sprites.length);
+  // console.log("Frames:", data.length);
+  console.log("Sprites:", storyboard.sprites.length);
 
-let commands = 0;
-storyboard.sprites.forEach((sprite) =>
-  sprite.commands.forEach(() => commands++)
-);
-console.log("Commands:", commands);
+  let commands = 0;
+  storyboard.sprites.forEach((sprite) =>
+    sprite.commands.forEach(() => commands++)
+  );
+  console.log("Commands:", commands);
 
-const end = new Date();
-const elapsed = (end.getTime() - start.getTime()) / 60000;
-console.log("Elapsed:", formatNumber(elapsed), "minutes");
+  const end = new Date();
+  const elapsed = (end.getTime() - start.getTime()) / 60000;
+  console.log("Elapsed:", formatNumber(elapsed), "minutes");
+};
+
+main();
