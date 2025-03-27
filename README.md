@@ -12,6 +12,7 @@ https://osu.ppy.sh/beatmapsets/2344967
 ## Video
 
 5 FPS: https://www.youtube.com/watch?v=9X4GQRoEhdc
+
 30 FPS: https://www.youtube.com/watch?v=mO0hZQr4ZTU
 
 ## Screenshots
