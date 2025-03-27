@@ -34,7 +34,7 @@ frame_end = 5250
 
 # Must be multiple of 3 so actual time rounds to an integer
 # Also have to match this with the storyboard side
-frame_rate = 6
+frame_rate = 1
 
 epsilon = 1e-5
 
